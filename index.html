@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <title>Shirka</title>
+
+  <link href="styles.css" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="wrapper">
+  <h1>Shirka</h1>
+
+  <ul id="nav" class="g-all">
+    <li class="g1-g2"><a href="https://github.com/hashmal/shirka/wiki">Learn</a></li>
+    <li class="g3-g4"><a href="irc://irc.freenode.net/shirka">Connect</a></li>
+    <li class="g5-g6"><a href="https://github.com/hashmal/shirka">Contribute</a></li>
+  </ul>
+
+  <div class="g-all">
+    <p>
+      Shirka is a programming language that does not generate memory garbage:
+      its implementation does not need a garbage collector to function properly,
+      but the human is not required to manage memory manually either.
+    </p>
+
+    <p>
+      It is concatenative (like Forth) and homoiconic (like Lisp). Below is
+      a short Shirka program implementing the Trabb Pardo–Knuth algorithm.
+    </p>
+
+<pre class="sk">
+<b data-cmt>-- Operation computing |n|^0.5 + 5*n^3</b>
+(<b data-sym>=></b> <b data-var>f</b>)
+  [ <b data-sym>-></b> <b data-var>n</b>
+    n abs <b data-num>0.5</b> <b data-sym>^</b> n <b data-num>3</b> <b data-sym>^</b> <b data-num>5</b> <b data-sym>*</b> <b data-sym>+</b> ]
+
+<b data-cmt>-- Ask the human to enter 11 numbers</b>
+<b data-str>"Please enter 11 numbers:"</b> puts
+[]
+(<b data-num>11</b> times)
+  [ get-value cons ]
+
+<b data-cmt>-- Apply `f' and display the result</b>
+(each)
+  [ f <b data-sym>>></b> <b data-num>400</b> <b data-sym>></b>
+    (if) [ [ <b data-sym>&lt;&lt;</b> <b data-str>"Overflow!"</b> puts ]
+           [                puts ] ] ]
+</pre>
+
+    <h2>Getting started</h2>
+
+    <p>
+      The Shirka interpreter is written in ANSI C and should work on most
+      Unix&#8209;like systems (it is developed on OS X).
+    </p>
+
+<pre>
+git clone git://github.com/hashmal/shirka.git
+cd shirka
+make
+</pre>
+
+    <p>
+      It reads and executes Shirka files (usually saved with the
+      <code>.shk</code> extension):
+    </p>
+
+<pre>
+./shirka FILE
+</pre>
+
+    <p>
+      You can now try the interactive mode
+      (<code>./shirka examples/repl.shk</code>) and
+      <a href="https://github.com/hashmal/shirka/wiki">learn the language</a>.
+      Have fun!
+    </p>
+  </div>
+
+  <footer class="g-all">
+    Copyright &copy; 2013, J&eacute;r&eacute;my Pinat.
+  </footer>
+</div>
+
+</body>
+</html>

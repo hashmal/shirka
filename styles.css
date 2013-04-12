@@ -1,0 +1,121 @@
+[class*=" g1"],[class^=g1],[class*=" g2"],[class^=g2],[class*=" g3"],[class^=g3],[class*=" g4"],[class^=g4],[class*=" g5"],[class^=g5],[class*=" g6"],[class^=g6],.g-all{display:block;float:left;margin-right:-100%;}
+.g1,.g2,.g3,.g4,.g5,.g6{width:14.98316498%;}.g1-g5 .g1,.g1-g5 .g2,.g1-g5 .g3,.g1-g5 .g4,.g1-g5 .g5,.g2-g6 .g2,.g2-g6 .g3,.g2-g6 .g4,.g2-g6 .g5,.g2-g6 .g6{width:18.05273834%;}.g1-g4 .g1,.g1-g4 .g2,.g1-g4 .g3,.g1-g4 .g4,.g2-g5 .g2,.g2-g5 .g3,.g2-g5 .g4,.g2-g5 .g5,.g3-g6 .g3,.g3-g6 .g4,.g3-g6 .g5,.g3-g6 .g6{width:22.70408163%;}.g1-g3 .g1,.g1-g3 .g2,.g1-g3 .g3,.g2-g4 .g2,.g2-g4 .g3,.g2-g4 .g4,.g3-g5 .g3,.g3-g5 .g4,.g3-g5 .g5,.g4-g6 .g4,.g4-g6 .g5,.g4-g6 .g6{width:30.58419244%;}.g1-g2,.g2-g3,.g3-g4,.g4-g5,.g5-g6{width:31.98653198%;}.g1-g5 .g1-g2,.g1-g5 .g2-g3,.g1-g5 .g3-g4,.g1-g5 .g4-g5,.g2-g6 .g2-g3,.g2-g6 .g3-g4,.g2-g6 .g4-g5,.g2-g6 .g5-g6{width:38.53955375%;}.g1-g2 .g1,.g1-g2 .g2,.g2-g3 .g2,.g2-g3 .g3,.g3-g4 .g3,.g3-g4 .g4,.g4-g5 .g4,.g4-g5 .g5,.g5-g6 .g5,.g5-g6 .g6{width:46.84210526%;}.g1-g4 .g1-g2,.g1-g4 .g2-g3,.g1-g4 .g3-g4,.g2-g5 .g2-g3,.g2-g5 .g3-g4,.g2-g5 .g4-g5,.g3-g6 .g3-g4,.g3-g6 .g4-g5,.g3-g6 .g5-g6{width:48.46938775%;}.g1-g3,.g2-g4,.g3-g5,.g4-g6{width:48.98989898%;}.g1-g5 .g1-g3,.g1-g5 .g2-g4,.g1-g5 .g3-g5,.g2-g6 .g2-g4,.g2-g6 .g3-g5,.g2-g6 .g4-g6{width:59.02636917%;}.g1-g3 .g1-g2,.g1-g3 .g2-g3,.g2-g4 .g2-g3,.g2-g4 .g3-g4,.g3-g5 .g3-g4,.g3-g5 .g4-g5,.g4-g6 .g4-g5,.g4-g6 .g5-g6{width:65.29209622%;}.g1-g4,.g2-g5,.g3-g6{width:65.99326598%;}.g1-g4 .g1-g3,.g1-g4 .g2-g4,.g2-g5 .g2-g4,.g2-g5 .g3-g5,.g3-g6 .g3-g5,.g3-g6 .g4-g6{width:74.23469388%;}.g1-g5 .g1-g4,.g1-g5 .g2-g5,.g2-g6 .g2-g5,.g2-g6 .g3-g6{width:79.51318458%;}.g1-g5,.g2-g6{width:82.99663298%;}.g-all{width:100%;margin-left:0;clear:left;}
+[class*=" g-pad"],[class^=g-pad]{padding-left:1.01010101%;padding-right:1.01010101%;left:-1.01010101%;}.g1-g5 [class*=" g-pad"],.g1-g5 [class^=g-pad],.g2-g6 [class*=" g-pad"],.g2-g6 [class^=g-pad]{padding-left:1.21703854%;padding-right:1.21703854%;left:-1.21703854%;}.g1-g4 [class*=" g-pad"],.g1-g4 [class^=g-pad],.g2-g5 [class*=" g-pad"],.g2-g5 [class^=g-pad],.g3-g6 [class*=" g-pad"],.g3-g6 [class^=g-pad]{padding-left:1.53061225%;padding-right:1.53061225%;left:-1.53061225%;}[class~=g-padfull],[class~=g-padinfull],[class~=g-padfull],[class~=g-padinfull],[class~=g-padfull],[class~=g-padinfull],[class~=g-padfull],[class~=g-padinfull],[class~=g-padfull],[class~=g-padinfull],[class~=g-padfull],[class~=g-padinfull]{padding-left:2.02020202%;padding-right:2.02020202%;left:-2.02020202%;}.g1-g3 [class*=" g-pad"],.g1-g3 [class^=g-pad],.g2-g4 [class*=" g-pad"],.g2-g4 [class^=g-pad],.g3-g5 [class*=" g-pad"],.g3-g5 [class^=g-pad],.g4-g6 [class*=" g-pad"],.g4-g6 [class^=g-pad]{padding-left:2.06185567%;padding-right:2.06185567%;left:-2.06185567%;}.g1-g5 [class~=g-padfull],.g1-g5 [class~=g-padinfull],.g1-g5 [class~=g-padfull],.g1-g5 [class~=g-padinfull],.g1-g5 [class~=g-padfull],.g1-g5 [class~=g-padinfull],.g1-g5 [class~=g-padfull],.g1-g5 [class~=g-padinfull],.g1-g5 [class~=g-padfull],.g1-g5 [class~=g-padinfull],.g2-g6 [class~=g-padfull],.g2-g6 [class~=g-padinfull],.g2-g6 [class~=g-padfull],.g2-g6 [class~=g-padinfull],.g2-g6 [class~=g-padfull],.g2-g6 [class~=g-padinfull],.g2-g6 [class~=g-padfull],.g2-g6 [class~=g-padinfull],.g2-g6 [class~=g-padfull],.g2-g6 [class~=g-padinfull]{padding-left:2.43407708%;padding-right:2.43407708%;left:-2.43407708%;}.g1-g4 [class~=g-padfull],.g1-g4 [class~=g-padinfull],.g1-g4 [class~=g-padfull],.g1-g4 [class~=g-padinfull],.g1-g4 [class~=g-padfull],.g1-g4 [class~=g-padinfull],.g1-g4 [class~=g-padfull],.g1-g4 [class~=g-padinfull],.g2-g5 [class~=g-padfull],.g2-g5 [class~=g-padinfull],.g2-g5 [class~=g-padfull],.g2-g5 [class~=g-padinfull],.g2-g5 [class~=g-padfull],.g2-g5 [class~=g-padinfull],.g2-g5 [class~=g-padfull],.g2-g5 [class~=g-padinfull],.g3-g6 [class~=g-padfull],.g3-g6 [class~=g-padinfull],.g3-g6 [class~=g-padfull],.g3-g6 [class~=g-padinfull],.g3-g6 [class~=g-padfull],.g3-g6 [class~=g-padinfull],.g3-g6 [class~=g-padfull],.g3-g6 [class~=g-padinfull]{padding-left:3.06122449%;padding-right:3.06122449%;left:-3.06122449%;}.g1-g2 [class*=" g-pad"],.g1-g2 [class^=g-pad],.g2-g3 [class*=" g-pad"],.g2-g3 [class^=g-pad],.g3-g4 [class*=" g-pad"],.g3-g4 [class^=g-pad],.g4-g5 [class*=" g-pad"],.g4-g5 [class^=g-pad],.g5-g6 [class*=" g-pad"],.g5-g6 [class^=g-pad]{padding-left:3.15789474%;padding-right:3.15789474%;left:-3.15789474%;}.g1-g3 [class~=g-padfull],.g1-g3 [class~=g-padinfull],.g1-g3 [class~=g-padfull],.g1-g3 [class~=g-padinfull],.g1-g3 [class~=g-padfull],.g1-g3 [class~=g-padinfull],.g2-g4 [class~=g-padfull],.g2-g4 [class~=g-padinfull],.g2-g4 [class~=g-padfull],.g2-g4 [class~=g-padinfull],.g2-g4 [class~=g-padfull],.g2-g4 [class~=g-padinfull],.g3-g5 [class~=g-padfull],.g3-g5 [class~=g-padinfull],.g3-g5 [class~=g-padfull],.g3-g5 [class~=g-padinfull],.g3-g5 [class~=g-padfull],.g3-g5 [class~=g-padinfull],.g4-g6 [class~=g-padfull],.g4-g6 [class~=g-padinfull],.g4-g6 [class~=g-padfull],.g4-g6 [class~=g-padinfull],.g4-g6 [class~=g-padfull],.g4-g6 [class~=g-padinfull]{padding-left:4.12371134%;padding-right:4.12371134%;left:-4.12371134%;}.g1-g2 [class~=g-padfull],.g1-g2 [class~=g-padinfull],.g1-g2 [class~=g-padfull],.g1-g2 [class~=g-padinfull],.g2-g3 [class~=g-padfull],.g2-g3 [class~=g-padinfull],.g2-g3 [class~=g-padfull],.g2-g3 [class~=g-padinfull],.g3-g4 [class~=g-padfull],.g3-g4 [class~=g-padinfull],.g3-g4 [class~=g-padfull],.g3-g4 [class~=g-padinfull],.g4-g5 [class~=g-padfull],.g4-g5 [class~=g-padinfull],.g4-g5 [class~=g-padfull],.g4-g5 [class~=g-padinfull],.g5-g6 [class~=g-padfull],.g5-g6 [class~=g-padinfull],.g5-g6 [class~=g-padfull],.g5-g6 [class~=g-padinfull]{padding-left:6.31578947%;padding-right:6.31578947%;left:-6.31578947%;}.g-pad,.g-padfull{position:relative;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;box-sizing:content-box;}.g-padin[class~=g-padin],.g-padinfull[class~=g-padinfull]{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box;left:0;}
+[class*=" g6"],[class^=g6]{margin-left:85.016835%;}.g2-g6 [class*=" g6"],.g2-g6 [class^=g6]{margin-left:81.94726166%;}.g2-g6 [class*=" g5"],.g2-g6 [class^=g5]{margin-left:61.46044625%;}.g2-g6 [class*=" g4"],.g2-g6 [class^=g4]{margin-left:40.97363083%;}.g2-g6 [class*=" g3"],.g2-g6 [class^=g3]{margin-left:20.48681542%;}.g3-g6 [class*=" g6"],.g3-g6 [class^=g6]{margin-left:77.29591837%;}.g3-g6 [class*=" g5"],.g3-g6 [class^=g5]{margin-left:51.53061225%;}.g3-g6 [class*=" g4"],.g3-g6 [class^=g4]{margin-left:25.76530612%;}.g4-g6 [class*=" g6"],.g4-g6 [class^=g6]{margin-left:69.41580756%;}.g4-g6 [class*=" g5"],.g4-g6 [class^=g5]{margin-left:34.70790378%;}.g5-g6 [class*=" g6"],.g5-g6 [class^=g6]{margin-left:53.15789474%;}[class*=" g5"],[class^=g5]{margin-left:68.013468%;}.g1-g5 [class*=" g5"],.g1-g5 [class^=g5]{margin-left:81.94726166%;}.g1-g5 [class*=" g4"],.g1-g5 [class^=g4]{margin-left:61.46044625%;}.g1-g5 [class*=" g3"],.g1-g5 [class^=g3]{margin-left:40.97363083%;}.g1-g5 [class*=" g2"],.g1-g5 [class^=g2]{margin-left:20.48681542%;}.g2-g5 [class*=" g5"],.g2-g5 [class^=g5]{margin-left:77.29591837%;}.g2-g5 [class*=" g4"],.g2-g5 [class^=g4]{margin-left:51.53061225%;}.g2-g5 [class*=" g3"],.g2-g5 [class^=g3]{margin-left:25.76530612%;}.g3-g5 [class*=" g5"],.g3-g5 [class^=g5]{margin-left:69.41580756%;}.g3-g5 [class*=" g4"],.g3-g5 [class^=g4]{margin-left:34.70790378%;}.g4-g5 [class*=" g5"],.g4-g5 [class^=g5]{margin-left:53.15789474%;}[class*=" g4"],[class^=g4]{margin-left:51.010101%;}.g1-g4 [class*=" g4"],.g1-g4 [class^=g4]{margin-left:77.29591837%;}.g1-g4 [class*=" g3"],.g1-g4 [class^=g3]{margin-left:51.53061225%;}.g1-g4 [class*=" g2"],.g1-g4 [class^=g2]{margin-left:25.76530612%;}.g2-g4 [class*=" g4"],.g2-g4 [class^=g4]{margin-left:69.41580756%;}.g2-g4 [class*=" g3"],.g2-g4 [class^=g3]{margin-left:34.70790378%;}.g3-g4 [class*=" g4"],.g3-g4 [class^=g4]{margin-left:53.15789474%;}[class*=" g3"],[class^=g3]{margin-left:34.006734%;}.g1-g3 [class*=" g3"],.g1-g3 [class^=g3]{margin-left:69.41580756%;}.g1-g3 [class*=" g2"],.g1-g3 [class^=g2]{margin-left:34.70790378%;}.g2-g3 [class*=" g3"],.g2-g3 [class^=g3]{margin-left:53.15789474%;}[class*=" g2"],[class^=g2]{margin-left:17.003367%;}.g1-g2 [class*=" g2"],.g1-g2 [class^=g2]{margin-left:53.15789474%;}
+.g1,[class*=g1-],.g-all,[class*=" g1-"],[class^=g1-],.g1,[class*=" g1-"] [class*=" g1-"],[class^=g1-] [class*=" g1-"],[class*=" g1-"] [class^=g1-],[class^=g1-] [class^=g1-],[class*=" g1-"] .g1,[class^=g1-] .g1,[class*=" g2-"] [class*=" g2-"],[class^=g2-] [class*=" g2-"],[class*=" g2-"] [class^=g2-],[class^=g2-] [class^=g2-],[class*=" g2-"] .g2,[class^=g2-] .g2,[class*=" g3-"] [class*=" g3-"],[class^=g3-] [class*=" g3-"],[class*=" g3-"] [class^=g3-],[class^=g3-] [class^=g3-],[class*=" g3-"] .g3,[class^=g3-] .g3,[class*=" g4-"] [class*=" g4-"],[class^=g4-] [class*=" g4-"],[class*=" g4-"] [class^=g4-],[class^=g4-] [class^=g4-],[class*=" g4-"] .g4,[class^=g4-] .g4,[class*=" g5-"] [class*=" g5-"],[class^=g5-] [class*=" g5-"],[class*=" g5-"] [class^=g5-],[class^=g5-] [class^=g5-],[class*=" g5-"] .g5,[class^=g5-] .g5,[class*=" g6-"] [class*=" g6-"],[class^=g6-] [class*=" g6-"],[class*=" g6-"] [class^=g6-],[class^=g6-] [class^=g6-],[class*=" g6-"] .g6,[class^=g6-] .g6{margin-left:0;clear:left;}
+[class*=" g-float"][class*=" g-float"],[class^=g-float][class^=g-float]{margin-left:2.02020202%;margin-right:2.02020202%;}.g1-g5 [class*=" g-float"][class*=" g-float"],.g1-g5 [class^=g-float][class^=g-float]{margin-left:2.4340770793519%;margin-right:2.4340770793519%;}.g1-g4 [class*=" g-float"][class*=" g-float"],.g1-g4 [class^=g-float][class^=g-float]{margin-left:3.0612244901052%;margin-right:3.0612244901052%;}.g1-g3 [class*=" g-float"][class*=" g-float"],.g1-g3 [class^=g-float][class^=g-float]{margin-left:4.1237113406271%;margin-right:4.1237113406271%;}.g1-g2 [class*=" g-float"][class*=" g-float"],.g1-g2 [class^=g-float][class^=g-float]{margin-left:6.3157894743424%;margin-right:6.3157894743424%;}
+.g-floatright[class~=g-floatright],.g-floatright[class~=g-floatright]+.g-floatright[class~=g-floatright]{float:right;margin-right:0;clear:right;}
+.g-floatleft[class~=g-floatleft]{float:left;margin-left:0;}
+.g2+[class*=" g2"],.g2+[class^=g2],[class*=-g2]+[class*=" g2"],[class*=-g2]+[class^=g2],.g3+[class*=" g3"],.g3+[class^=g3],[class*=-g3]+[class*=" g3"],[class*=-g3]+[class^=g3],.g3+[class*=" g2"],.g3+[class^=g2],[class*=-g3]+[class*=" g2"],[class*=-g3]+[class^=g2],.g4+[class*=" g4"],.g4+[class^=g4],[class*=-g4]+[class*=" g4"],[class*=-g4]+[class^=g4],.g4+[class*=" g3"],.g4+[class^=g3],[class*=-g4]+[class*=" g3"],[class*=-g4]+[class^=g3],.g4+[class*=" g2"],.g4+[class^=g2],[class*=-g4]+[class*=" g2"],[class*=-g4]+[class^=g2],.g5+[class*=" g5"],.g5+[class^=g5],[class*=-g5]+[class*=" g5"],[class*=-g5]+[class^=g5],.g5+[class*=" g4"],.g5+[class^=g4],[class*=-g5]+[class*=" g4"],[class*=-g5]+[class^=g4],.g5+[class*=" g3"],.g5+[class^=g3],[class*=-g5]+[class*=" g3"],[class*=-g5]+[class^=g3],.g5+[class*=" g2"],.g5+[class^=g2],[class*=-g5]+[class*=" g2"],[class*=-g5]+[class^=g2],.g6+[class*=" g6"],.g6+[class^=g6],[class*=-g6]+[class*=" g6"],[class*=-g6]+[class^=g6],.g6+[class*=" g5"],.g6+[class^=g5],[class*=-g6]+[class*=" g5"],[class*=-g6]+[class^=g5],.g6+[class*=" g4"],.g6+[class^=g4],[class*=-g6]+[class*=" g4"],[class*=-g6]+[class^=g4],.g6+[class*=" g3"],.g6+[class^=g3],[class*=-g6]+[class*=" g3"],[class*=-g6]+[class^=g3],.g6+[class*=" g2"],.g6+[class^=g2],[class*=-g6]+[class*=" g2"],[class*=-g6]+[class^=g2],.g-clear{clear:left;}
+.g-overlap[class*=overlap]{clear:none;}
+.g-hide{display:none !important;}
+
+body {
+    background-color: rgb(249, 249, 249);
+    color: rgb(8, 8, 8);
+    font-family: "helvetica neue", helvetica, arial, sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+a {
+    color: inherit;
+    font-weight: 500;
+}
+
+h1, h2 {
+    font-family: "Futura";
+    font-weight: normal;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+h1 {
+    text-shadow: 0 1px 0 #cccccc,0 2px 0 #c9c9c9,0 3px 0 #bbbbbb,0 4px 0 #b9b9b9,0 5px 0 #aaaaaa,0 6px 1px rgba(0,0,0,0.1),0 0 5px rgba(0,0,0,0.1),0 1px 3px rgba(0,0,0,0.3),0 3px 5px rgba(0,0,0,0.2),0 5px 10px rgba(0,0,0,0.25),0 20px 20px rgba(0,0,0,0.15);
+    font-size: 4em;
+}
+
+h2 {
+    font-size: 2em;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    text-transform: uppercase;
+}
+
+li {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wrapper {
+    margin: 0 auto;
+    max-width: 550px;
+}
+
+code {
+    font-size: .9em;
+}
+
+pre {
+    border-radius: 1px;
+    box-shadow: 0 1px 0 #cccccc,0 2px 0 #c9c9c9,0 3px 0 #bbbbbb,0 4px 0 #b9b9b9,0 5px 0 #aaaaaa,0 6px 1px rgba(0,0,0,0.1),0 0 5px rgba(0,0,0,0.1),0 1px 3px rgba(0,0,0,0.3),0 3px 5px rgba(0,0,0,0.2),0 5px 10px rgba(0,0,0,0.25),0 20px 20px rgba(0,0,0,0.15);
+    color: rgb(8, 8, 8);
+    font-family: "Menlo", "Monaco", courier, monospace;
+    font-size: .9em;
+    margin: 2em 1px 3em;
+    padding: 1em;
+}
+
+footer {
+    color: rgb(127, 127, 127);
+    display: block;
+    font-size: 0.9em;
+    margin: 2em 0 4em;
+    text-align: center;
+}
+
+.sk b {
+    font-weight: normal;
+}
+
+.sk b[data-cmt] {
+    color: rgb(90, 82, 95);
+    color: rgb(104, 107, 124);
+    font-style: italic;
+}
+
+.sk b[data-num] {
+    color: rgb(129, 31, 36);
+}
+
+.sk b[data-str] {
+    color: rgb(11, 97, 37);
+}
+
+.sk b[data-sym] {
+    color: rgb(121, 73, 56);
+}
+
+.sk b[data-var] {
+    color: rgb(35, 74, 151);
+    font-weight: bold;
+}
+
+#nav {
+    font-family: "futura";
+    margin-bottom: 1em;
+}
+
+#nav li {
+    text-align: center;
+}
+
+#nav a {
+    color: inherit;
+    text-decoration: inherit;
+}
