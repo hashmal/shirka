@@ -58,6 +58,12 @@ skO *parse_number (char **next)
 	char buffer[SYMBOL_MAX_LENGTH];
 	short i = 0;
 
+	if (*c == '-') {
+		buffer[i] = *c;
+		i++;
+		c++;
+	}
+
 	while (1) {
 		if (DIGIT(*c)) {
 			buffer[i] = *c;
@@ -401,6 +407,9 @@ skO *skO_parse (char **next)
 		obj = parse_string(&src);
 		if (obj != NULL) goto matched;
 
+		obj = parse_number(&src);
+		if (obj != NULL) goto matched;
+
 		obj = parse_qidentifier(&src);
 		if (obj != NULL) goto matched;
 
@@ -411,9 +420,6 @@ skO *skO_parse (char **next)
 		if (obj != NULL) goto matched;
 
 		obj = parse_list(&src);
-		if (obj != NULL) goto matched;
-
-		obj = parse_number(&src);
 		if (obj != NULL) goto matched;
 
 		/* Handle end of lists and prefixed syntax. */
