@@ -39,9 +39,6 @@ SK_INTRINSIC skI_defOperation (skE *env)
 	skO *sym = skE_stackPop(env);
 	skO *obj = skE_stackPop(env);
 
-	skO_checkType(sym, SKO_QSYMBOL);
-	skO_checkType(obj, SKO_LIST);
-
 	skE_defOperation(env, sym, obj);
 }
 
@@ -114,7 +111,12 @@ SK_INTRINSIC skI_add (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.number = l->data.number + r->data.number;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -123,7 +125,12 @@ SK_INTRINSIC skI_sub (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.number = l->data.number - r->data.number;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -132,7 +139,12 @@ SK_INTRINSIC skI_mul (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.number = l->data.number * r->data.number;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -141,7 +153,12 @@ SK_INTRINSIC skI_div (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.number = l->data.number / r->data.number;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -150,7 +167,12 @@ SK_INTRINSIC skI_pow (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.number = pow(l->data.number, r->data.number);
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -158,7 +180,11 @@ SK_INTRINSIC skI_pow (skE *env)
 SK_INTRINSIC skI_abs (skE *env)
 {
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.number = fabs(l->data.number);
+
 	skE_stackPush(env, l);
 }
 
@@ -166,8 +192,13 @@ SK_INTRINSIC skI_gt (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.boolean = l->data.number > r->data.number;
 	l->tag = SKO_BOOLEAN;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -176,8 +207,13 @@ SK_INTRINSIC skI_lt (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
 	l->data.boolean = l->data.number < r->data.number;
 	l->tag = SKO_BOOLEAN;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -186,7 +222,12 @@ SK_INTRINSIC skI_and (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_BOOLEAN);
+	skO_checkType(l, SKO_BOOLEAN);
+
 	l->data.boolean = l->data.boolean && r->data.boolean;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -195,7 +236,12 @@ SK_INTRINSIC skI_or (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_BOOLEAN);
+	skO_checkType(l, SKO_BOOLEAN);
+
 	l->data.boolean = l->data.boolean || r->data.boolean;
+
 	skO_free(r);
 	skE_stackPush(env, l);
 }
@@ -203,7 +249,11 @@ SK_INTRINSIC skI_or (skE *env)
 SK_INTRINSIC skI_not (skE *env)
 {
 	skO *l = skE_stackPop(env);
+
+	skO_checkType(l, SKO_BOOLEAN);
+
 	l->data.boolean = !l->data.boolean;
+
 	skE_stackPush(env, l);
 }
 
