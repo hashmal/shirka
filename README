@@ -20,7 +20,7 @@ Currently defined intrinsic operations:
     Data execution      ! !?
 
     Reserve/restore     $=> $-> $<-
-                        (canonical form of ->, => and <->)
+                        (canonical form of ->, => and <-)
 
     Boolean logic       and or not
 
