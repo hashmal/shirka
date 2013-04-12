@@ -1,0 +1,40 @@
+Implementation of the Shirka programming language
+=================================================
+
+This is a work-in-progress, incomplete implementation. Use with caution.
+
+Installation
+------------
+
+    make && make clean
+
+Usage
+-----
+
+This section covers the usage of the interpreter but not the language itself.
+
+    ./shirka file.shk
+
+Currently defined intrinsic operations:
+
+    Data execution      ! !?
+
+    Reserve/restore     $=> $-> $<-
+                        (canonical form of ->, => and <->)
+
+    Boolean logic       and or not
+
+    Equality testing    =
+
+    Math                + - * /
+
+    Lists               length cons uncons
+
+    I/O                 print getc
+
+    Meta                $parse $scopein $scopeout
+
+License
+-------
+
+View LICENSE file.

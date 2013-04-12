@@ -1,0 +1,63 @@
+-- Copyright (c) 2013, Jeremy Pinat.
+
+(=> >>)
+  [ -> x x <- x ]
+
+(=> <<)
+  [ -> x ]
+
+(=> ><)
+  [ -> x -> y <- x <- y ]
+
+(=> loop)
+  [ => op
+    [ op tail ] => tail
+    tail ]
+
+(=> while)
+  [ => cond
+    => op
+    [ cond [ op tail ] !? ] => tail
+    tail ]
+
+(=> if)
+  [ uncons -> iftrue
+    uncons -> iffalse
+    <<
+    -> cond
+    cond     iftrue  !?
+    cond not iffalse !? ]
+
+(=> puts)
+  [ print '\n print ]
+
+(=> reverse)
+  [ "" ><
+    ([length 0 = not] while)
+      [ -> src
+        -> dest
+        <- src uncons -> el -> src
+        <- dest <- el cons
+        <- src ]
+      << ]
+
+(=> gets)
+  [ "" TRUE
+    ([] while)
+      [ getc
+        >> '\n = not
+        (if)
+          [ [ cons         TRUE  ]
+            [ cons reverse FALSE ] ] ] ]
+
+------------------------------------------------------------------------------
+
+"-- Interactive Shirka --\n" puts
+
+(loop)
+  [ "> " print
+    gets
+
+    $scopeout
+      $parse !
+    $scopein ]
