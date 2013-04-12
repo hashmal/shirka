@@ -24,6 +24,8 @@
  * - skE for names related to environments
  */
 
+#define SK_O_TAIL
+
 #define SYMBOL_MAX_LENGTH 256
 
 typedef struct symbol   symbol;

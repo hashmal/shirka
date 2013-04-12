@@ -193,11 +193,34 @@ void skE_scopePush (skE *env)
 	env->scope = ct;
 }
 
+#ifdef SK_DEBUG_SCOPE
+void p_scope_data (skE *env)
+{
+	reserved *r = env->scope->first_def;
+	printf("[");
+	if (r != NULL) {
+		printf("%s", r->sym->name);
+		r = r->next;
+	}
+	while (r != NULL) {
+		printf(" %s", r->sym->name);
+		r = r->next;
+	}
+	printf("]");
+}
+#endif
+
 void skE_scopePop (skE *env)
 {
 	reserved *node;
 	reserved *next;
 	context *expired = env->scope;
+
+	#ifdef SK_DEBUG_SCOPE
+	printf("    (undef) ");
+	p_scope_data(env);
+	printf("\n");
+	#endif
 
 	env->scope = expired->parent;
 
@@ -233,7 +256,11 @@ void skE_execList (skE *env, skO *list)
 	list->data.list = NULL;
 	skO_free(list);
 
+	skE_scopePush(env);
+
+#ifdef SK_O_TAIL
 tail:
+#endif
 	while (head != NULL) {
 		tok = head;
 		head = head->next;
@@ -250,6 +277,7 @@ tail:
 				skE_stackPush(env, skO_clone(r->data.obj));
 				break;
 			case KIND_OPERATION:
+				#ifdef SK_O_TAIL
 				if (tok->next == NULL) {
 					skO_free(tok);
 					tok = skO_clone(r->data.obj);
@@ -258,10 +286,11 @@ tail:
 					skO_free(tok);
 					goto tail;
 				} else {
-					skE_scopePush(env);
 					skE_execList(env, skO_clone(r->data.obj));
-					skE_scopePop(env);
 				}
+				#else
+				skE_execList(env, skO_clone(r->data.obj));
+				#endif
 				break;
 			case KIND_NATIVE:
 				r->data.native(env);
@@ -285,6 +314,8 @@ tail:
 			exit(EXIT_FAILURE);
 		}
 	}
+
+	skE_scopePop(env);
 }
 
 #include "intrinsics.c"
@@ -296,8 +327,6 @@ void load_intrinsics (skE *env)
 	skE_defNative(env, "!?",        &skI_exec_if);
 	skE_defNative(env, "=",         &skI_eql);
 	skE_defNative(env, "$parse",    &skI_parse);
-	skE_defNative(env, "$scopeout", &skI_scopeout);
-	skE_defNative(env, "$scopein",  &skI_scopein);
 	/* List operations */
 	skE_defNative(env, "length",    &skI_length);
 	skE_defNative(env, "cons",      &skI_cons);

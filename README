@@ -15,6 +15,8 @@ This section covers the usage of the interpreter but not the language itself.
 
     ./shirka file.shk
 
+A rudimentary REPL lies in the `examples` directory.
+
 Currently defined intrinsic operations:
 
     Data execution      ! !?
@@ -32,7 +34,7 @@ Currently defined intrinsic operations:
 
     I/O                 print getc
 
-    Meta                $parse $scopein $scopeout
+    Meta                $parse
 
 License
 -------

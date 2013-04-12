@@ -293,13 +293,3 @@ SK_INTRINSIC skI_uncons (skE *env)
 	skE_stackPush(env, list);
 	skE_stackPush(env, obj);
 }
-
-SK_INTRINSIC skI_scopeout (skE *env)
-{
-	skE_scopePop(env);
-}
-
-SK_INTRINSIC skI_scopein (skE *env)
-{
-	skE_scopePush(env);
-}

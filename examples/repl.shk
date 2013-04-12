@@ -55,9 +55,4 @@
 "-- Interactive Shirka --\n" puts
 
 (loop)
-  [ "> " print
-    gets
-
-    $scopeout
-      $parse !
-    $scopein ]
+  [ "> " print gets $parse ! ]
