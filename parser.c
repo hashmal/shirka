@@ -58,7 +58,7 @@ skO *parse_number (char **next)
 	char buffer[SYMBOL_MAX_LENGTH];
 	short i = 0;
 
-	if (*c == '-') {
+	if (*c == '-' && c[1] >= '0' && c[1] <= '9') {
 		buffer[i] = *c;
 		i++;
 		c++;
