@@ -28,7 +28,7 @@ Currently defined intrinsic operations:
 
     Equality testing    =
 
-    Math                + - * /
+    Math                + - * / ^ abs > <
 
     Lists               length cons uncons
 

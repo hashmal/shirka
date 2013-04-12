@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "shirka.h"
 
 #define SK_INTRINSIC void
@@ -141,6 +142,42 @@ SK_INTRINSIC skI_div (skE *env)
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
 	l->data.number = l->data.number / r->data.number;
+	skO_free(r);
+	skE_stackPush(env, l);
+}
+
+SK_INTRINSIC skI_pow (skE *env)
+{
+	skO *r = skE_stackPop(env);
+	skO *l = skE_stackPop(env);
+	l->data.number = pow(l->data.number, r->data.number);
+	skO_free(r);
+	skE_stackPush(env, l);
+}
+
+SK_INTRINSIC skI_abs (skE *env)
+{
+	skO *l = skE_stackPop(env);
+	l->data.number = fabs(l->data.number);
+	skE_stackPush(env, l);
+}
+
+SK_INTRINSIC skI_gt (skE *env)
+{
+	skO *r = skE_stackPop(env);
+	skO *l = skE_stackPop(env);
+	l->data.boolean = l->data.number > r->data.number;
+	l->tag = SKO_BOOLEAN;
+	skO_free(r);
+	skE_stackPush(env, l);
+}
+
+SK_INTRINSIC skI_lt (skE *env)
+{
+	skO *r = skE_stackPop(env);
+	skO *l = skE_stackPop(env);
+	l->data.boolean = l->data.number < r->data.number;
+	l->tag = SKO_BOOLEAN;
 	skO_free(r);
 	skE_stackPush(env, l);
 }
