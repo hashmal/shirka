@@ -156,6 +156,6 @@ skO *skE_stackPop     (skE *env);
 
 /* Execute objects in an environment. */
 void skE_call         (skE *env, skO *sym);
-void skE_execList     (skE *env, skO *list);
+void skE_execList     (skE *env, skO *list, int scoping);
 
 #endif

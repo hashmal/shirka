@@ -1,10 +1,10 @@
+-- Copyright (C) 2013, Jeremy Pinat.
+
 ------------------------------------------------------------------------------
 --                                                                          --
 --                              SHIRKA PRELUDE                              --
 --                                                                          --
 ------------------------------------------------------------------------------
-
--- Copyright (C) 2013, Jeremy Pinat.
 
 -- This module is meant to be implicitly included in all Shirka programs.
 -- Operations defined here build upon intrinsic operations to provide
@@ -57,12 +57,14 @@
 (=> times)
 -- Expected: .. List Number
 -- Execute the list a number of times.
-  [ ([>> 0 >] while)
+  [ ><
+    => $times/op
+    ([>> 0 >] while)
       [ 1 -
         -> $times/counter
-        >> !
+        $times/op
         <- $times/counter ]
-    << << ]
+    << ]
 
 ------------------------------------------------------------------------------
 (=> each)

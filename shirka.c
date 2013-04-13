@@ -5,16 +5,15 @@
 
 #include "shirka.h"
 
-int main (int argc, char const *argv[])
+skO *load_parse (char *path)
 {
 	FILE   *f;
 	size_t f_size;
 	char   *src;
 	char   *cursor;
-	skO *ast;
-	skE *env;
+	skO    *ast;
 
-	f = fopen(argv[1], "rb");
+	f = fopen(path, "rb");
 	if (f == NULL) {
 		printf("PANIC! Could not open file.\n");
 		exit(EXIT_FAILURE);
@@ -26,6 +25,7 @@ int main (int argc, char const *argv[])
 	/* copy source into string */
 	src = (char *)malloc(f_size);
 	fread(src, f_size, 1, f);
+	src[f_size] = 0;
 	fclose(f);
 
 	cursor = src;
@@ -33,9 +33,24 @@ int main (int argc, char const *argv[])
 
 	free(src);
 
-	env = skE_new();
+	return ast;
+}
 
-	skE_execList(env, ast);
+int main (int argc, char const *argv[])
+{
+	skO *ast;
+	skE *env = skE_new();
+
+	if (argc != 2) {
+		puts("Wrong number of command line arguments.");
+		exit(EXIT_FAILURE);
+	}
+
+	ast = load_parse("lib/prelude.shk");
+	skE_execList(env, ast, 0);
+
+	ast = load_parse((char *)argv[1]);
+	skE_execList(env, ast, 1);
 
 	skE_free(env);
 	return 0;

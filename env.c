@@ -242,12 +242,12 @@ void skE_call (skE *env, skO *sym)
 	skO *list = skO_list_new();
 	sk_list_append(list, sym);
 
-	skE_execList(env, list);
+	skE_execList(env, list, 1);
 
 	skO_free(list);
 }
 
-void skE_execList (skE *env, skO *list)
+void skE_execList (skE *env, skO *list, int scoping)
 {
 	skO *cont;
 	skO *head = list->data.list;
@@ -257,7 +257,8 @@ void skE_execList (skE *env, skO *list)
 	list->data.list = NULL;
 	skO_free(list);
 
-	skE_scopePush(env);
+	if (scoping)
+		skE_scopePush(env);
 
 #ifdef SK_O_TAIL
 tail:
@@ -287,10 +288,10 @@ tail:
 					skO_free(tok);
 					goto tail;
 				} else {
-					skE_execList(env, skO_clone(r->data.obj));
+					skE_execList(env, skO_clone(r->data.obj), 1);
 				}
 				#else
-				skE_execList(env, skO_clone(r->data.obj));
+				skE_execList(env, skO_clone(r->data.obj), 1);
 				#endif
 				break;
 			case KIND_NATIVE:
@@ -308,12 +309,12 @@ tail:
 					}
 				} else {
 					if (cont != NULL)
-						skE_execList(env, cont);
+						skE_execList(env, cont, 1);
 				}
 				#else
 				cont = r->data.native(env);
 				if (cont != NULL)
-					skE_execList(env, cont);
+					skE_execList(env, cont, 1);
 				#endif
 				break;
 			default:
@@ -336,7 +337,8 @@ tail:
 		}
 	}
 
-	skE_scopePop(env);
+	if (scoping)
+		skE_scopePop(env);
 }
 
 #include "intrinsics.c"
