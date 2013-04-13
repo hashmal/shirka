@@ -153,3 +153,17 @@
 (=> sum)
 -- Expected: .. List
   [ [+] 0 fold ]
+
+------------------------------------------------------------------------------
+(=> ..)
+-- Expected: .. Number Number
+-- Build a list containing elements from number to number (inclusive).
+  [ -> low -> high
+    [] <- high >>
+
+    ([low >=] while)
+      [ -> current
+        current cons
+        <- current 1 -
+        >> ]
+    << ]
