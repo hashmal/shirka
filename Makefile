@@ -1,6 +1,6 @@
 .SUFFIXES: .c .o
 
-shirka: shirka.c shirka.h env.o objects.o parser.o
+shirka: shirka.c shirka.h env.o objects.o parser.o intrinsics.c
 	gcc -ansi -pedantic -Wall -o shirka shirka.c env.o objects.o parser.o
 
 clean:

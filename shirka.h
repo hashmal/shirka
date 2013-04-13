@@ -65,7 +65,7 @@ struct skE {
 	context *scope;
 };
 
-typedef void (skE_natOp)(skE*);
+typedef skO *(skE_natOp)(skE*);
 
 struct context {
 	context  *parent;
@@ -81,8 +81,8 @@ struct reserved {
 		KIND_NATIVE
 	} kind;
 	union {
-		skO  *obj;
-		void (*native)(skE*);
+		skO       *obj;
+		skE_natOp *native;
 	} data;
 };
 

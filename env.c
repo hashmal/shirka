@@ -249,6 +249,7 @@ void skE_call (skE *env, skO *sym)
 
 void skE_execList (skE *env, skO *list)
 {
+	skO *cont;
 	skO *head = list->data.list;
 	skO *tok;
 	reserved *r;
@@ -293,7 +294,21 @@ tail:
 				#endif
 				break;
 			case KIND_NATIVE:
-				r->data.native(env);
+				cont = r->data.native(env);
+
+				if (tok->next == NULL) {
+
+					if (cont != NULL) {
+						skO_free(tok);
+						head = cont->data.list;
+						cont->data.list = NULL;
+						skO_free(cont);
+						goto tail;
+					}
+				} else {
+					if (cont != NULL)
+						skE_execList(env, cont);
+				}
 				break;
 			default:
 				printf("PANIC! Internal kind error.\n");

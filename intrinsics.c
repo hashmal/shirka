@@ -5,7 +5,7 @@
 #include <math.h>
 #include "shirka.h"
 
-#define SK_INTRINSIC void
+#define SK_INTRINSIC skO *
 
 void print_list (skO *list)
 {
@@ -40,6 +40,8 @@ SK_INTRINSIC skI_defOperation (skE *env)
 	skO *obj = skE_stackPop(env);
 
 	skE_defOperation(env, sym, obj);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_defObject (skE *env)
@@ -48,6 +50,8 @@ SK_INTRINSIC skI_defObject (skE *env)
 	skO *obj = skE_stackPop(env);
 
 	skE_defObject(env, sym, obj);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_undef (skE *env)
@@ -55,6 +59,8 @@ SK_INTRINSIC skI_undef (skE *env)
 	skO *sym = skE_stackPop(env);
 
 	skE_undef(env, sym);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_print (skE *env)
@@ -90,21 +96,29 @@ SK_INTRINSIC skI_print (skE *env)
 
 	fflush(stdout);
 	skO_free(obj);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_getc (skE *env)
 {
 	skE_stackPush(env, skO_character_new(fgetc(stdin)));
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_true (skE *env)
 {
 	skE_stackPush(env, skO_boolean_new(1));
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_false (skE *env)
 {
 	skE_stackPush(env, skO_boolean_new(0));
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_add (skE *env)
@@ -119,6 +133,8 @@ SK_INTRINSIC skI_add (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_sub (skE *env)
@@ -133,6 +149,8 @@ SK_INTRINSIC skI_sub (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_mul (skE *env)
@@ -147,6 +165,8 @@ SK_INTRINSIC skI_mul (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_div (skE *env)
@@ -161,6 +181,8 @@ SK_INTRINSIC skI_div (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_pow (skE *env)
@@ -175,6 +197,8 @@ SK_INTRINSIC skI_pow (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_abs (skE *env)
@@ -186,6 +210,8 @@ SK_INTRINSIC skI_abs (skE *env)
 	l->data.number = fabs(l->data.number);
 
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_gt (skE *env)
@@ -201,6 +227,8 @@ SK_INTRINSIC skI_gt (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_lt (skE *env)
@@ -216,6 +244,8 @@ SK_INTRINSIC skI_lt (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_and (skE *env)
@@ -230,6 +260,8 @@ SK_INTRINSIC skI_and (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_or (skE *env)
@@ -244,6 +276,8 @@ SK_INTRINSIC skI_or (skE *env)
 
 	skO_free(r);
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_not (skE *env)
@@ -255,6 +289,8 @@ SK_INTRINSIC skI_not (skE *env)
 	l->data.boolean = !l->data.boolean;
 
 	skE_stackPush(env, l);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_exec (skE *env)
@@ -262,7 +298,7 @@ SK_INTRINSIC skI_exec (skE *env)
 	skO *list = skE_stackPop(env);
 	skO_checkType(list, SKO_LIST);
 
-	skE_execList(env, list);
+	return list;
 }
 
 SK_INTRINSIC skI_parse (skE *env)
@@ -300,6 +336,8 @@ SK_INTRINSIC skI_parse (skE *env)
 	skE_stackPush(env, ast);
 
 	skO_free(list);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_exec_if (skE *env)
@@ -311,10 +349,14 @@ SK_INTRINSIC skI_exec_if (skE *env)
 	skO_checkType(b, SKO_BOOLEAN);
 
 	if (b->data.boolean) {
-		skE_execList(env, list);
+		skO_free(b);
+	} else {
+		skO_free(b);
+		skO_free(list);
+		list = NULL;
 	}
 
-	skO_free(b);
+	return list;
 }
 
 SK_INTRINSIC skI_eql (skE *env)
@@ -340,6 +382,8 @@ SK_INTRINSIC skI_eql (skE *env)
 
 	skO_free(l);
 	skO_free(r);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_length (skE *env)
@@ -355,6 +399,8 @@ SK_INTRINSIC skI_length (skE *env)
 
 	skE_stackPush(env, list);
 	skE_stackPush(env, skO_number_new(len));
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_cons (skE *env)
@@ -366,6 +412,8 @@ SK_INTRINSIC skI_cons (skE *env)
 	list->data.list = obj;
 
 	skE_stackPush(env, list);
+
+	return NULL;
 }
 
 SK_INTRINSIC skI_uncons (skE *env)
@@ -379,4 +427,6 @@ SK_INTRINSIC skI_uncons (skE *env)
 
 	skE_stackPush(env, list);
 	skE_stackPush(env, obj);
+
+	return NULL;
 }
