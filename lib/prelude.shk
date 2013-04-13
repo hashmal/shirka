@@ -71,10 +71,13 @@
 -- Expected: .. List List
 -- Execute the first list with a single element from the second list available
 -- on the stack, until no element remains.
-  [ => op-each
+  [ => $each/op
     length -> n
-    (n times)
-      [ uncons op-each ]
+    (<- n times)
+      [ uncons ><
+        -> $each/remainder
+        $each/op
+        <- $each/remainder ]
     << ]
 
 ------------------------------------------------------------------------------
@@ -121,3 +124,13 @@
 -- Print a string representation of the object on the standard output stream,
 -- then start a new line.
   [ print '\n print ]
+
+------------------------------------------------------------------------------
+(=> <=)
+-- Expected .. Number Number
+  [ > not ]
+
+------------------------------------------------------------------------------
+(=> >=)
+-- Expected .. Number Number
+  [ < not ]
