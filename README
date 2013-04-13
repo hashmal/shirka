@@ -1,42 +1,35 @@
-Implementation of the Shirka programming language
-=================================================
+Shirka interpreter
+==================
 
-This is a work-in-progress, incomplete implementation. Use with caution.
+Shirka is a programming language that does not generate memory garbage: its
+runtime does not need a garbage collector to function properly, but the human
+does not have to manage memory manually either.
+
+Website: http://hashmal.github.io/shirka/
+IRC: `#shirka` channel on `irc.freenode.net`
+
+Features
+--------
+
+* Simple, flexible syntax
+* Abstraction through operation composition
+* Homoiconicity (data is also executable code)
+* No memory garbage is ever generated
+* MIT License (view the `LICENSE` file)
 
 Installation
 ------------
 
-    make && make clean
+If not already done, get the source code:
 
-Usage
------
+    git clone git://github.com/hashmal/shirka.git
 
-This section covers the usage of the interpreter but not the language itself.
+To compile the interpreter, run the following in the `shirka` directory:
 
-    ./shirka file.shk
+    make
 
-A rudimentary REPL lies in the `examples` directory.
+The resulting program can read and execute Shirka files:
 
-Currently defined intrinsic operations:
+    ./shirka FILE
 
-    Data execution      ! !?
-
-    Reserve/restore     $=> $-> $<-
-                        (canonical form of ->, => and <-)
-
-    Boolean logic       and or not
-
-    Equality testing    =
-
-    Math                + - * / ^ abs > <
-
-    Lists               length cons uncons
-
-    I/O                 print getc
-
-    Meta                $parse
-
-License
--------
-
-View LICENSE file.
+A rudimentary REPL written in Shirka itself lies in the `examples` directory.
