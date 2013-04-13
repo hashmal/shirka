@@ -167,3 +167,17 @@
         <- current 1 -
         >> ]
     << ]
+
+------------------------------------------------------------------------------
+(=> filter)
+-- Expected: .. List List
+-- First list is executed on every element of the second list; it must push a
+-- boolean on the stack. The final result is a list of all element for which
+-- the boolean is TRUE.
+  [ => $filter/op
+    [] ><
+
+    (each)
+      [ >> -> $filter/val
+        $filter/op [$filter/val cons] !? ]
+    list/reverse ]
