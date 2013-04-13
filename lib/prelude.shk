@@ -181,3 +181,11 @@
       [ >> -> $filter/val
         $filter/op [$filter/val cons] !? ]
     list/reverse ]
+
+------------------------------------------------------------------------------
+(=> map)
+  [ => $map/op
+    [] ><
+    (each)
+      [ $map/op cons ]
+    list/reverse ]
