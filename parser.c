@@ -64,6 +64,9 @@ skO *parse_number (char **next)
 		c++;
 	}
 
+	if (*c == '.')
+		return NULL;
+
 	while (1) {
 		if (DIGIT(*c)) {
 			buffer[i] = *c;
