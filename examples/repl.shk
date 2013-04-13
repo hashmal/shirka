@@ -4,9 +4,39 @@
 --                                                                          --
 --                                   REPL                                   --
 --                                                                          --
+-- A rudimentary REPL for Shirka. Reserves do not persist between issued    --
+-- commands.                                                                --
 ------------------------------------------------------------------------------
 
-"-- Interactive Shirka --\n" puts
+-- CONSTANTS
 
-([TRUE] while)
-  [ "> " print gets $parse ! ]
+"> " -> PROMPT
+
+-- OPERATIONS
+
+(=> ask-code)
+  [ PROMPT print gets $parse ]
+
+(=> exit-cmd?)
+  [ length 1 =
+    (if)
+      [ [      >> uncons >< <<
+          [/exit] uncons >< <<
+          =
+          (if)
+            [ [ << TRUE  ]
+              [    FALSE ] ] ]
+        [ FALSE ] ] ]
+
+-- MAIN
+
+"Interactive Shirka"        puts
+"Enter `/exit' to leave.\n" puts
+
+  :$repl/continue
+([:$repl/continue =] while)
+  [ ask-code
+    exit-cmd?
+    (if)
+      [ [   :$repl/exit     ]
+        [ ! :$repl/continue ] ] ]
