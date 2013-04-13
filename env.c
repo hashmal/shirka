@@ -294,6 +294,7 @@ tail:
 				#endif
 				break;
 			case KIND_NATIVE:
+				#ifdef SK_O_TAIL
 				cont = r->data.native(env);
 
 				if (tok->next == NULL) {
@@ -309,6 +310,11 @@ tail:
 					if (cont != NULL)
 						skE_execList(env, cont);
 				}
+				#else
+				cont = r->data.native(env);
+				if (cont != NULL)
+					skE_execList(env, cont);
+				#endif
 				break;
 			default:
 				printf("PANIC! Internal kind error.\n");
