@@ -1,0 +1,121 @@
+------------------------------------------------------------------------------
+--                                                                          --
+--                              SHIRKA PRELUDE                              --
+--                                                                          --
+------------------------------------------------------------------------------
+
+-- Copyright (C) 2013, Jeremy Pinat.
+
+-- This module is meant to be implicitly included in all Shirka programs.
+-- Operations defined here build upon intrinsic operations to provide
+-- common, convenient abstractions.
+
+------------------------------------------------------------------------------
+(=> >>)
+-- Expected: .. Object
+-- Duplicate the object.
+  [ -> x x <- x ]
+
+------------------------------------------------------------------------------
+(=> <<)
+-- Expected: .. Object
+-- Drop the object.
+  [ -> x ]
+
+------------------------------------------------------------------------------
+(=> ><)
+-- Expected: .. Object Object
+-- Swap the two objects.
+  [ -> x -> y <- x <- y ]
+
+------------------------------------------------------------------------------
+(=> if)
+-- Expected: .. Boolean List
+-- The list must contain exactly two other lists. The first one is executed
+-- if the boolean is TRUE, and the second one is executed if the boolean is
+-- FALSE
+  [ uncons -> iftrue
+    uncons -> iffalse
+    <<
+    -> cond
+    cond     iftrue  !?
+    cond not iffalse !? ]
+
+------------------------------------------------------------------------------
+(=> while)
+-- Expected: .. List List
+-- Take a first list which when executed leaves a boolean object on the stack.
+-- Take a second list that is executed as long as the first list leaves TRUE
+-- on the stack.
+  [ => $while/cond
+    => $while/op
+    (=> tail)
+      [ $while/cond [ $while/op tail ] !? ]
+    tail ]
+
+------------------------------------------------------------------------------
+(=> times)
+-- Expected: .. List Number
+-- Execute the list a number of times.
+  [ ([>> 0 >] while)
+      [ 1 -
+        -> $times/counter
+        >> !
+        <- $times/counter ]
+    << << ]
+
+------------------------------------------------------------------------------
+(=> each)
+-- Expected: .. List List
+-- Execute the first list with a single element from the second list available
+-- on the stack, until no element remains.
+  [ => op-each
+    length -> n
+    (n times)
+      [ uncons op-each ]
+    << ]
+
+------------------------------------------------------------------------------
+(=> list/reverse)
+-- Expected: .. List
+-- Reverse the order of the elements in the list.
+  [ "" ><
+    ([length 0 = not] while)
+      [ -> src
+        -> dest
+        <- src uncons -> el -> src
+        <- dest <- el cons
+        <- src ]
+      << ]
+
+------------------------------------------------------------------------------
+(=> gets)
+-- Expected: ..
+-- Read the standard input stream until a new line is met. Put a list of
+-- collected characters on the stack.
+  [ "" TRUE
+    ([] while)
+      [ getc
+        >> '\n = not
+        (if)
+          [ [ cons              TRUE  ]
+            [ cons list/reverse FALSE ] ] ] ]
+
+------------------------------------------------------------------------------
+(=> get-value)
+-- Expected: ..
+-- Read the standard input stream until a new line is met. Parse the collected
+-- string as a Shirka program, ensure it contains only one object, then put
+-- this object on the stack.
+  [ gets $parse
+    length 1 =
+    (if)
+      [ [ uncons >< << ]
+        [ abort        ] ] ]
+
+------------------------------------------------------------------------------
+(=> puts)
+-- Expected: .. Object
+-- Print a string representation of the object on the standard output stream,
+-- then start a new line.
+  [ print '\n print ]
