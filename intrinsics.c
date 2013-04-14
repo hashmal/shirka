@@ -456,3 +456,39 @@ SK_INTRINSIC skI_with (skE *env)
 
 	return NULL;
 }
+
+SK_INTRINSIC skI_type (skE *env)
+{
+	skO *obj = skE_stackPop(env);
+	skO *sym;
+
+	switch (obj->tag) {
+	case SKO_QSYMBOL:
+		sym = skO_symbol_new("QuotedSymbol");
+		break;
+	case SKO_SYMBOL:
+		sym = skO_symbol_new("Symbol");
+		break;
+	case SKO_NUMBER:
+		sym = skO_symbol_new("Number");
+		break;
+	case SKO_CHARACTER:
+		sym = skO_symbol_new("Character");
+		break;
+	case SKO_LIST:
+		sym = skO_symbol_new("List");
+		break;
+	case SKO_BOOLEAN:
+		sym = skO_symbol_new("Boolean");
+		break;
+	default:
+		printf("PANIC! Internal type error");
+		exit(EXIT_FAILURE);
+	}
+
+	skE_stackPush(env, obj);
+	sym->tag = SKO_QSYMBOL;
+	skE_stackPush(env, sym);
+
+	return NULL;
+}

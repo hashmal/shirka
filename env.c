@@ -382,6 +382,7 @@ void load_intrinsics (skE *env)
 	skE_defNative(env, "=",         &skI_eql);
 	skE_defNative(env, "$parse",    &skI_parse);
 	skE_defNative(env, "with",      &skI_with);
+	skE_defNative(env, "type?",     &skI_type);
 	/* List operations */
 	skE_defNative(env, "length",    &skI_length);
 	skE_defNative(env, "cons",      &skI_cons);

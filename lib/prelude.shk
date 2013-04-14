@@ -189,3 +189,13 @@
     (each)
       [ $map/op cons ]
     list/reverse ]
+
+------------------------------------------------------------------------------
+-- Type predicates
+
+[ type? :List         = ] => List?
+[ type? :Boolean      = ] => Boolean?
+[ type? :Number       = ] => Number?
+[ type? :Character    = ] => Character?
+[ type? :Symbol       = ] => Symbol?
+[ type? :QuotedSymbol = ] => QuotedSymbol?
