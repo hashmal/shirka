@@ -106,6 +106,11 @@ skO *skO_list_new          (void);
 skO *skO_parse (char **next);
 
 /*
+ * Parse a file.
+ */
+skO *skO_loadParse (char *path);
+
+/*
  * Perform a deep copy of `obj'. Object referenced in the `next' field of the
  * struct is NOT copied but set to `NULL' in the copy.
  */

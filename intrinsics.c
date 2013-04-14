@@ -430,3 +430,29 @@ SK_INTRINSIC skI_uncons (skE *env)
 
 	return NULL;
 }
+
+SK_INTRINSIC skI_with (skE *env)
+{
+	char buffer[256];
+	int i = 0;
+	skO *ast;
+	skO *skchar;
+	skO *fname = skE_stackPop(env);
+
+	skO_checkType(fname, SKO_LIST);
+	skchar = fname->data.list;
+
+	while (skchar != NULL) {
+		buffer[i] = skchar->data.character;
+		skchar = skchar->next;
+		i++;
+	}
+	buffer[i] = 0;
+
+	ast = skO_loadParse(buffer);
+	skO_free(fname);
+
+	skE_execList(env, ast, 0);
+
+	return NULL;
+}

@@ -341,6 +341,37 @@ tail:
 		skE_scopePop(env);
 }
 
+skO *skO_loadParse (char *path)
+{
+	FILE   *f;
+	size_t f_size;
+	char   *src;
+	char   *cursor;
+	skO    *ast;
+
+	f = fopen(path, "rb");
+	if (f == NULL) {
+		printf("PANIC! Could not open file.\n");
+		exit(EXIT_FAILURE);
+	}
+	/* get file size */
+	fseek(f, 0, SEEK_END);
+	f_size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	/* copy source into string */
+	src = (char *)malloc(f_size);
+	fread(src, f_size, 1, f);
+	src[f_size] = 0;
+	fclose(f);
+
+	cursor = src;
+	ast = skO_parse(&cursor);
+
+	free(src);
+
+	return ast;
+}
+
 #include "intrinsics.c"
 
 void load_intrinsics (skE *env)
@@ -350,6 +381,7 @@ void load_intrinsics (skE *env)
 	skE_defNative(env, "!?",        &skI_exec_if);
 	skE_defNative(env, "=",         &skI_eql);
 	skE_defNative(env, "$parse",    &skI_parse);
+	skE_defNative(env, "with",      &skI_with);
 	/* List operations */
 	skE_defNative(env, "length",    &skI_length);
 	skE_defNative(env, "cons",      &skI_cons);
