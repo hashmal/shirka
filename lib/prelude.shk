@@ -81,7 +81,7 @@
     << ]
 
 ------------------------------------------------------------------------------
-(=> list/reverse)
+(=> reverse)
 -- Expected: .. List
 -- Reverse the order of the elements in the list.
   [ "" ><
@@ -104,7 +104,7 @@
         >> '\n = not
         (if)
           [ [ cons              TRUE  ]
-            [ cons list/reverse FALSE ] ] ] ]
+            [ cons reverse FALSE ] ] ] ]
 
 ------------------------------------------------------------------------------
 (=> get-value)
@@ -180,7 +180,7 @@
     (each)
       [ >> -> $filter/val
         $filter/op [$filter/val cons] !? ]
-    list/reverse ]
+    reverse ]
 
 ------------------------------------------------------------------------------
 (=> map)
@@ -188,7 +188,7 @@
     [] ><
     (each)
       [ $map/op cons ]
-    list/reverse ]
+    reverse ]
 
 ------------------------------------------------------------------------------
 -- Type predicates
