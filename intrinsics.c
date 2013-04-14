@@ -492,3 +492,21 @@ SK_INTRINSIC skI_type (skE *env)
 
 	return NULL;
 }
+
+SK_INTRINSIC skI_quote (skE *env)
+{
+	skO *sym = skE_stackPop(env);
+	sym->tag = SKO_QSYMBOL;
+	skE_stackPush(env, sym);
+
+	return NULL;
+}
+
+SK_INTRINSIC skI_unquote (skE *env)
+{
+	skO *sym = skE_stackPop(env);
+	sym->tag = SKO_SYMBOL;
+	skE_stackPush(env, sym);
+
+	return NULL;
+}
