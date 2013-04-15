@@ -15,7 +15,11 @@
 -- OPERATIONS
 
 (=> ask-code)
-  [ PROMPT print gets $parse ]
+  [ PROMPT print gets $parse
+    >> :$parse/failed =
+    (if)
+      [ [ << << "Syntax error!" puts [] ]
+        [                            ] ] ]
 
 (=> exit-cmd?)
   [ length 1 =

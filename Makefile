@@ -1,10 +1,12 @@
 .SUFFIXES: .c .o
 
 shirka: shirka.c shirka.h env.o objects.o parser.o intrinsics.c
-	gcc -ansi -pedantic -Wall -o shirka shirka.c env.o objects.o parser.o
+	$(CC) -std=c99 -pedantic -Wall -Wextra -Wdeclaration-after-statement \
+	-o shirka shirka.c env.o objects.o parser.o
 
 clean:
 	rm *.o
 
 .c.o:
-	gcc -ansi -pedantic -Wall -c $< -o $@
+	$(CC) -std=c99 -pedantic -Wall -Wextra -Wdeclaration-after-statement \
+	-o $@ -c $<

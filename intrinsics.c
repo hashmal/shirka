@@ -304,13 +304,13 @@ SK_INTRINSIC skI_exec (skE *env)
 
 SK_INTRINSIC skI_parse (skE *env)
 {
-	char *cursor;
-	char *str;
-	skO  *node;
-	skO  *ast;
-	skO  *list = skE_stackPop(env);
-	int  count = 1; /* string will be 0 terminated */
-	int  i     = 0;
+	char    *cursor;
+	char    *str;
+	skO     *node;
+	skO     *list = skE_stackPop(env);
+	int     count = 1; /* string will be 0 terminated */
+	int     i     = 0;
+	jmp_buf jmp;
 
 	skO_checkType(list, SKO_LIST);
 
@@ -331,11 +331,20 @@ SK_INTRINSIC skI_parse (skE *env)
 	str[i] = 0;
 
 	cursor = str;
-	ast = skO_parse(&cursor);
+
+	if (setjmp(jmp)) {
+		skE_stackPush(env, skO_list_new());
+		skE_stackPush(env, skO_quoted_symbol_new("$parse/failed"));
+
+		free(str);
+		skO_free(list);
+
+		return NULL;
+	}
+
+	skE_stackPush(env, skO_parse(&cursor, jmp, NULL));
+
 	free(str);
-
-	skE_stackPush(env, ast);
-
 	skO_free(list);
 
 	return NULL;

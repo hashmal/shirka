@@ -24,9 +24,17 @@
  * - skE for names related to environments
  */
 
+#include <stdio.h>
+#include <setjmp.h>
+
 #define SK_O_TAIL
 
 #define SYMBOL_MAX_LENGTH 256
+
+#define FATAL(...) do {                                                      \
+	fprintf (stderr, __VA_ARGS__);                                       \
+	exit(EXIT_FAILURE);                                                  \
+} while (0)
 
 typedef struct symbol   symbol;
 typedef struct skO      skO;
@@ -104,7 +112,7 @@ skO *skO_list_new          (void);
 /*
  * Parse a string.
  */
-skO *skO_parse (char **next);
+skO *skO_parse (char **next, jmp_buf jmp, char *delim);
 
 /*
  * Parse a file.
