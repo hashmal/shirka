@@ -24,9 +24,16 @@
  * - skE for names related to environments
  */
 
+#include <stdio.h>
+
 #define SK_O_TAIL
 
 #define SYMBOL_MAX_LENGTH 256
+
+#define FATAL(...) do {                                                      \
+	fprintf (stderr, __VA_ARGS__);                                       \
+	exit(EXIT_FAILURE);                                                  \
+} while (0)
 
 typedef struct symbol   symbol;
 typedef struct skO      skO;
