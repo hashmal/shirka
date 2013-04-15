@@ -12,6 +12,7 @@ int main (int argc, char const *argv[])
 
 	if (argc != 2) {
 		puts("Wrong number of command line arguments.");
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 
@@ -21,6 +22,11 @@ int main (int argc, char const *argv[])
 	ast = skO_loadParse((char *)argv[1]);
 	skE_execList(env, ast, 1);
 
-	skE_free(env);
-	return 0;
+	if (env->panic) {
+		skE_free(env);
+		exit(EXIT_FAILURE);
+	} else {
+		skE_free(env);
+		return 0;
+	}
 }

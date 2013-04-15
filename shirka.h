@@ -63,6 +63,7 @@ struct skO {
 struct skE {
 	skO     *stack;
 	context *scope;
+	int     panic;
 };
 
 typedef skO *(skE_natOp)(skE*);

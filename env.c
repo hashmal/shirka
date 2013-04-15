@@ -12,6 +12,7 @@ skO *skE_stackPop (skE *env)
 
 	if (env->stack == NULL) {
 		printf("PANIC! Tried to pop object but stack is empty.\n");
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 	obj = env->stack;
@@ -76,6 +77,7 @@ skE *skE_new (void)
 	skE *env = (skE *)malloc(sizeof(skE));
 	env->stack = NULL;
 	env->scope = NULL;
+	env->panic = 0;
 	skE_scopePush(env);
 	load_intrinsics(env);
 	return env;
@@ -136,6 +138,7 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 
 	if (scope_find_current(env, sym) != NULL) {
 		printf("PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 
@@ -161,11 +164,13 @@ void skE_undef (skE *env, skO *sym)
 
 	if (r == NULL) {
 		printf("PANIC! Reserved object not found in current scope.\n");
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 
 	if (r->kind != KIND_OBJECT) {
 		printf("PANIC! Expected object, got native or operation.\n");
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 
@@ -272,6 +277,7 @@ tail:
 			r = scope_find(env, tok);
 			if (r == NULL) {
 				printf("PANIC! Not found: %s\n", (tok->data.sym)->name);
+				env->panic = 1;
 				exit(EXIT_FAILURE);
 			}
 			switch (r->kind) {
@@ -333,6 +339,7 @@ tail:
 			break;
 		default:
 			printf("PANIC! Internal type error.\n");
+			env->panic = 1;
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -351,7 +358,7 @@ skO *skO_loadParse (char *path)
 
 	f = fopen(path, "rb");
 	if (f == NULL) {
-		printf("PANIC! Could not open file.\n");
+		printf("INTERPRETER ERROR! Could not open file.\n");
 		exit(EXIT_FAILURE);
 	}
 	/* get file size */

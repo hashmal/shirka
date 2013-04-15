@@ -90,6 +90,7 @@ SK_INTRINSIC skI_print (skE *env)
 		break;
 	default:
 		printf("PANIC! Internal type error.\n");
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 		break;
 	}
@@ -368,6 +369,7 @@ SK_INTRINSIC skI_eql (skE *env)
 		switch (l->tag) {
 		case SKO_LIST:
 			printf("PANIC! Equality testing not yet implemented for lists.\n");
+			env->panic = 1;
 			exit(EXIT_FAILURE);
 		default:
 			if (l->data.list == r->data.list) {
@@ -483,6 +485,7 @@ SK_INTRINSIC skI_type (skE *env)
 		break;
 	default:
 		printf("PANIC! Internal type error");
+		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 
