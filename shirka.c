@@ -11,6 +11,11 @@ int main (int argc, char const *argv[])
 	skE *env = skE_new();
 	skE_init(env);
 
+	if (setjmp(env->jmp)) {
+		printf("Panic mode was set. Aborting.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc != 2) {
 		puts("Wrong number of command line arguments.");
 		env->panic = 1;

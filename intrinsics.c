@@ -91,8 +91,7 @@ SK_INTRINSIC skI_print (skE *env)
 	default:
 		printf("PANIC! Internal type error.\n");
 		env->panic = 1;
-		exit(EXIT_FAILURE);
-		break;
+		longjmp(env->jmp, 1);
 	}
 
 	fflush(stdout);
@@ -379,7 +378,7 @@ SK_INTRINSIC skI_eql (skE *env)
 		case SKO_LIST:
 			printf("PANIC! Equality testing not yet implemented for lists.\n");
 			env->panic = 1;
-			exit(EXIT_FAILURE);
+			longjmp(env->jmp, 1);
 		default:
 			if (l->data.list == r->data.list) {
 				skE_stackPush(env, skO_boolean_new(1));
@@ -495,7 +494,7 @@ SK_INTRINSIC skI_type (skE *env)
 	default:
 		printf("PANIC! Internal type error");
 		env->panic = 1;
-		exit(EXIT_FAILURE);
+		longjmp(env->jmp, 1);
 	}
 
 	skE_stackPush(env, obj);
@@ -537,11 +536,10 @@ SK_INTRINSIC skI_try (skE *env)
 	local->stack = stack->data.list;
 	stack->data.list = NULL;
 
-	skE_execList(local, action, 1);
-
-	if (local->panic) {
+	if (setjmp(local->jmp)) {
 		skE_stackPush(env, skO_quoted_symbol_new("$try/failed"));
 	} else {
+		skE_execList(local, action, 1);
 		node = env->stack;
 		if (node == NULL) {
 			env->stack = local->stack;
@@ -551,6 +549,7 @@ SK_INTRINSIC skI_try (skE *env)
 			}
 			node->next = local->stack;
 		}
+		skE_stackPush(env, skO_quoted_symbol_new("$try/ok"));
 	}
 
 	local->scope = NULL;

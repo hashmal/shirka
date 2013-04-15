@@ -13,7 +13,7 @@ skO *skE_stackPop (skE *env)
 	if (env->stack == NULL) {
 		printf("PANIC! Tried to pop object but stack is empty.\n");
 		env->panic = 1;
-		exit(EXIT_FAILURE);
+		longjmp(env->jmp, 1);
 	}
 	obj = env->stack;
 	env->stack = obj->next;
@@ -78,6 +78,7 @@ skE *skE_new (void)
 	env->stack = NULL;
 	env->scope = NULL;
 	env->panic = 0;
+
 	return env;
 }
 
@@ -143,7 +144,7 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 	if (scope_find_current(env, sym) != NULL) {
 		printf("PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
 		env->panic = 1;
-		exit(EXIT_FAILURE);
+		longjmp(env->jmp, 1);
 	}
 
 	slot           = (reserved *)malloc(sizeof(reserved));
@@ -169,13 +170,13 @@ void skE_undef (skE *env, skO *sym)
 	if (r == NULL) {
 		printf("PANIC! Reserved object not found in current scope.\n");
 		env->panic = 1;
-		exit(EXIT_FAILURE);
+		longjmp(env->jmp, 1);
 	}
 
 	if (r->kind != KIND_OBJECT) {
 		printf("PANIC! Expected object, got native or operation.\n");
 		env->panic = 1;
-		exit(EXIT_FAILURE);
+		longjmp(env->jmp, 1);
 	}
 
 	if (node == r) {
@@ -282,7 +283,7 @@ tail:
 			if (r == NULL) {
 				printf("PANIC! Not found: %s\n", (tok->data.sym)->name);
 				env->panic = 1;
-				exit(EXIT_FAILURE);
+				longjmp(env->jmp, 1);
 			}
 			switch (r->kind) {
 			case KIND_OBJECT:
@@ -329,7 +330,7 @@ tail:
 				break;
 			default:
 				printf("PANIC! Internal kind error.\n");
-				break;
+				longjmp(env->jmp, 1);
 			}
 
 			skO_free(tok);
@@ -344,7 +345,7 @@ tail:
 		default:
 			printf("PANIC! Internal type error.\n");
 			env->panic = 1;
-			exit(EXIT_FAILURE);
+			longjmp(env->jmp, 1);
 		}
 	}
 

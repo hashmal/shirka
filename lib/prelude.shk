@@ -199,3 +199,13 @@
 [ type? :Character    = ] => Character?
 [ type? :Symbol       = ] => Symbol?
 [ type? :QuotedSymbol = ] => QuotedSymbol?
+
+------------------------------------------------------------------------------
+(=> rescue)
+-- Expected: .. error-status List
+-- Execute the list only if some error happened.
+  [ => $rescue/op
+    >> :$try/failed =
+    (if)
+      [ [ << $rescue/op ]
+        [ <<            ] ] ]

@@ -178,8 +178,8 @@ skO *parse_character (char **next, jmp_buf jmp)
 			*next = c;
 			return skO_character_new('\n');
 		} else {
-			longjmp(jmp, 1);
 			FATAL("PANIC! Unknown escape sequence.\n");
+			longjmp(jmp, 1);
 		}
 	} else {
 		char_literal = *c;
@@ -361,8 +361,8 @@ skO *parse_string (char **next, jmp_buf jmp)
 				sk_list_append(list, skO_character_new('\n'));
 				break;
 			default:
-				longjmp(jmp, 1);
 				FATAL("PANIC! Unknown escape sequence.\n");
+				longjmp(jmp, 1);
 			}
 		} else {
 			sk_list_append(list, skO_character_new(*c));
@@ -480,8 +480,8 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* If everything failed... */
 
-		longjmp(jmp, 1);
 		FATAL("PANIC! Parsing error: %s\n", src);
+		longjmp(jmp, 1);
 
 	matched:
 		sk_list_append(list, obj);
