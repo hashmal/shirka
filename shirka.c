@@ -9,6 +9,7 @@ int main (int argc, char const *argv[])
 {
 	skO *ast;
 	skE *env = skE_new();
+	skE_init(env);
 
 	if (argc != 2) {
 		puts("Wrong number of command line arguments.");

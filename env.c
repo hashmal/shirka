@@ -78,9 +78,13 @@ skE *skE_new (void)
 	env->stack = NULL;
 	env->scope = NULL;
 	env->panic = 0;
+	return env;
+}
+
+void skE_init (skE *env)
+{
 	skE_scopePush(env);
 	load_intrinsics(env);
-	return env;
 }
 
 void skE_free (skE *env)
@@ -396,6 +400,7 @@ void load_intrinsics (skE *env)
 	skE_defNative(env, "$parse",    &skI_parse);
 	skE_defNative(env, "with",      &skI_with);
 	skE_defNative(env, "type?",     &skI_type);
+	skE_defNative(env, "try",     &skI_try);
 	/* Symbol operations */
 	skE_defNative(env, "quote",     &skI_quote);
 	skE_defNative(env, "unquote",   &skI_unquote);

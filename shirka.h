@@ -150,6 +150,7 @@ void sk_list_append (skO *list, skO *obj);
 
 /* Allocate and initialize a new environment. */
 skE *skE_new          (void);
+void skE_init         (skE *env);
 
 /* Release an environment and its contents. */
 void skE_free         (skE *env);

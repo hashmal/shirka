@@ -522,3 +522,40 @@ SK_INTRINSIC skI_unquote (skE *env)
 
 	return NULL;
 }
+
+SK_INTRINSIC skI_try (skE *env)
+{
+	skO *action = skE_stackPop(env);
+	skO *stack  = skE_stackPop(env);
+	skO *node;
+	skE *local  = skE_new();
+
+	skO_checkType(action, SKO_LIST);
+	skO_checkType(stack, SKO_LIST);
+
+	local->scope = env->scope;
+	local->stack = stack->data.list;
+	stack->data.list = NULL;
+
+	skE_execList(local, action, 1);
+
+	if (local->panic) {
+		skE_stackPush(env, skO_quoted_symbol_new("$try/failed"));
+	} else {
+		node = env->stack;
+		if (node == NULL) {
+			env->stack = local->stack;
+		} else {
+			while (node->next != NULL) {
+				node = node->next;
+			}
+			node->next = local->stack;
+		}
+	}
+
+	local->scope = NULL;
+	skE_scopePush(local);
+	skO_free(stack);
+	skE_free(local);
+	return NULL;
+}
