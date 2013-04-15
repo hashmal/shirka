@@ -348,6 +348,12 @@ skO *skO_loadParse (char *path)
 	char   *src;
 	char   *cursor;
 	skO    *ast;
+	jmp_buf jmp;
+
+	if (setjmp(jmp)) {
+		printf("Syntax error in file %s\n", path);
+		exit(EXIT_FAILURE);
+	}
 
 	f = fopen(path, "rb");
 	if (f == NULL) {
@@ -365,7 +371,7 @@ skO *skO_loadParse (char *path)
 	fclose(f);
 
 	cursor = src;
-	ast = skO_parse(&cursor);
+	ast = skO_parse(&cursor, jmp, NULL);
 
 	free(src);
 

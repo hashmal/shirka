@@ -25,6 +25,7 @@
  */
 
 #include <stdio.h>
+#include <setjmp.h>
 
 #define SK_O_TAIL
 
@@ -110,7 +111,7 @@ skO *skO_list_new          (void);
 /*
  * Parse a string.
  */
-skO *skO_parse (char **next);
+skO *skO_parse (char **next, jmp_buf jmp, char *delim);
 
 /*
  * Parse a file.
