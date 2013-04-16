@@ -209,3 +209,18 @@
     (if)
       [ [ << $rescue/op ]
         [ <<            ] ] ]
+
+------------------------------------------------------------------------------
+(=> ++)
+-- Expected: .. List List
+-- Concatenate two lists.
+  [ >< reverse
+    ([length 0 >] while)
+      [ uncons >< -> r cons <- r ]
+    << ]
+
+------------------------------------------------------------------------------
+(=> append)
+-- Expected: .. List Object
+-- Insert an object at the end of a list.
+  [ [] >< cons ++ ]
