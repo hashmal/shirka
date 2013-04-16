@@ -46,9 +46,10 @@
   [ -> description
     => test-case
 
-    []
     (try)    [ test-case ]
     (rescue) [ FALSE     ]
+
+    uncons >< <<
 
     (if)
       [ [ '. print ]

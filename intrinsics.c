@@ -348,13 +348,10 @@ SK_INTRINSIC skI_parse (skE *env)
 	cursor = str;
 
 	if (setjmp(jmp)) {
-		skE_stackPush(env, skO_list_new());
-		skE_stackPush(env, skO_quoted_symbol_new("$parse/failed"));
-
 		free(str);
 		skO_free(list);
 
-		return NULL;
+		longjmp(env->jmp, 1);
 	}
 
 	skE_stackPush(env, skO_parse(&cursor, jmp, NULL));
@@ -508,7 +505,7 @@ SK_INTRINSIC skI_type (skE *env)
 		sym = skO_symbol_new("Boolean");
 		break;
 	default:
-		printf("PANIC! Internal type error");
+		printf("PANIC! Internal type error: %i\n", obj->tag);
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -541,36 +538,27 @@ SK_INTRINSIC skI_unquote (skE *env)
 SK_INTRINSIC skI_try (skE *env)
 {
 	skO *action = skE_stackPop(env);
-	skO *stack  = skE_stackPop(env);
-	skO *node;
 	skE *local  = skE_new();
+	skO *result;
 
 	skO_checkType(action, SKO_LIST);
-	skO_checkType(stack, SKO_LIST);
 
 	local->scope = env->scope;
-	local->stack = stack->data.list;
-	stack->data.list = NULL;
+	local->stack = NULL;
 
 	if (setjmp(local->jmp)) {
 		skE_stackPush(env, skO_quoted_symbol_new("$try/failed"));
 	} else {
 		skE_execList(local, action, 1);
-		node = env->stack;
-		if (node == NULL) {
-			env->stack = local->stack;
-		} else {
-			while (node->next != NULL) {
-				node = node->next;
-			}
-			node->next = local->stack;
-		}
+		result = skO_list_new();
+		result->data.list = local->stack;
+		local->stack = NULL;
+		skE_stackPush(env, result);
 		skE_stackPush(env, skO_quoted_symbol_new("$try/ok"));
 	}
 
 	local->scope = NULL;
 	skE_scopePush(local);
-	skO_free(stack);
 	skE_free(local);
 	return NULL;
 }
