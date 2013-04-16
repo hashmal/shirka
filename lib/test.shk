@@ -1,0 +1,63 @@
+-- Copyright (c) 2013, Jeremy Pinat.
+
+------------------------------------------------------------------------------
+--                                                                          --
+--                        TEST AUTOMATION FRAMEWORK                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
+-- Library for automated testing of Shirka programs (particularly unit
+-- testing). This library is still a work in progress, implementing bare
+-- features only, and not checking for everything.
+--
+-- Usage
+-- -----
+--
+--     (with) "lib/test.shk"
+--
+--     (test/runSuite) [
+--
+--       ("true" test/case) [
+--
+--         -- execute code and reserve values here
+--
+--         (test/assertions) [
+--           [ TRUE ]
+--           ...
+--           ...
+--         ]
+--       ]
+--
+--       ...
+--       ...
+--     ]
+
+------------------------------------------------------------------------------
+(=> test/runSuite)
+-- Expects: .. List
+-- Run a "test suite", i.e. a list containing *test cases*.
+  [ ! '\n print ]
+
+------------------------------------------------------------------------------
+(=> test/case)
+-- Expects: .. List String
+-- Describe a test case in a list. A test case consists of arbitrary code
+-- followed by a single list of *assertions*.
+  [ -> description
+    => test-case
+
+    []
+    (try)    [ test-case ]
+    (rescue) [ FALSE     ]
+
+    (if)
+      [ [ '. print ]
+        [ 'F print ] ] ]
+
+------------------------------------------------------------------------------
+(=> test/assertions)
+-- Expects: .. List
+-- Take a list of assertions. An assertion is an executable list returning
+-- a boolean: TRUE if the assertion is a success, FALSE if it is a failure.
+  [ (map)       [ !   ]
+    (TRUE fold) [ and ] ]

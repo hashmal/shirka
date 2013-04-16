@@ -90,9 +90,6 @@ void skE_init (skE *env)
 
 void skE_free (skE *env)
 {
-	if (env->stack != NULL)
-		printf("WARNING! Stack non empty upon exit.\n");
-
 	skE_scopePop(env);
 	free(env);
 }
