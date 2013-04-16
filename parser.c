@@ -406,6 +406,9 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		if (*src == delim[0]) {
 			src++;
 			consume_leading(&src);
+			#ifdef SK_PARSER_DEBUG
+			printf("Parsed %c\n", delim[0]);
+			#endif
 		} else {
 			return NULL;
 		}
@@ -426,6 +429,9 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 			if (*src == delim[1]) {
 				src++;
 				*next = src;
+				#ifdef SK_PARSER_DEBUG
+				printf("Parsed %c\n", delim[1]);
+				#endif
 				return list;
 			}
 		}
@@ -481,7 +487,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* If everything failed... */
 
-		FATAL("PANIC! Parsing error: %s\n", src);
+		printf("PANIC! Parsing error: %s\n", src);
 		longjmp(jmp, 1);
 
 	matched:
