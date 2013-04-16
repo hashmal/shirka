@@ -1,0 +1,27 @@
+-- Copyright (c) 2013, Jeremy Pinat.
+
+------------------------------------------------------------------------------
+--                                                                          --
+--                            99 Bottles of Beer                            --
+--                                                                          --
+------------------------------------------------------------------------------
+
+(=> bottle-plural) [ 1 = (if) [ [ "bottle" ] [ "bottles" ] ] ]
+
+99 1 .. reverse
+(each)
+  [ -> i
+
+    i bottle-plural -> pluralized
+
+    i print " " print pluralized print " of beer on the wall, " print
+    i print " " print pluralized print " of beer." puts
+
+    "Take one down, pass it around, " print
+
+    i 1 >
+    (if)
+      [ [ i 1 - -> i
+          i bottle-plural -> pluralized
+          i print " " print pluralized print " of beer on the wall!\n" puts ]
+        [ "No more bottles of beer on the wall!" puts ] ] ]
