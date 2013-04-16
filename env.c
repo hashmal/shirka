@@ -423,6 +423,7 @@ void load_intrinsics (skE *env)
 	skE_defNative(env, "*",         &skI_mul);
 	skE_defNative(env, "/",         &skI_div);
 	skE_defNative(env, "^",         &skI_pow);
+	skE_defNative(env, "%",         &skI_mod);
 	skE_defNative(env, "abs",       &skI_abs);
 	skE_defNative(env, ">",         &skI_gt);
 	skE_defNative(env, "<",         &skI_lt);

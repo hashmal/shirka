@@ -201,6 +201,22 @@ SK_INTRINSIC skI_pow (skE *env)
 	return NULL;
 }
 
+SK_INTRINSIC skI_mod (skE *env)
+{
+	skO *r = skE_stackPop(env);
+	skO *l = skE_stackPop(env);
+
+	skO_checkType(r, SKO_NUMBER);
+	skO_checkType(l, SKO_NUMBER);
+
+	l->data.number = fmod(l->data.number, r->data.number);
+
+	skO_free(r);
+	skE_stackPush(env, l);
+
+	return NULL;
+}
+
 SK_INTRINSIC skI_abs (skE *env)
 {
 	skO *l = skE_stackPop(env);
