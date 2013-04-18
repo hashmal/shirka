@@ -381,24 +381,49 @@ SK_INTRINSIC skI_exec_if (skE *env)
 	return list;
 }
 
+int skO_eql (skO *l, skO *r)
+{
+	skO *ln;
+	skO *rn;
+
+	if (l->tag == r->tag) {
+		switch (l->tag) {
+		case SKO_LIST:
+			ln = l->data.list;
+			rn = r->data.list;
+
+			while (ln && rn) {
+				if (!skO_eql(ln, rn))
+					return 0;
+
+				ln = ln->next;
+				rn = rn->next;
+			}
+
+			if (ln != rn) {
+				return 0;
+			} else {
+				return 1;
+			}
+		default:
+			if (l->data.list == r->data.list) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	} else {
+		return 0;
+	}
+}
+
 SK_INTRINSIC skI_eql (skE *env)
 {
 	skO *r = skE_stackPop(env);
 	skO *l = skE_stackPop(env);
 
-	if (l->tag == r->tag) {
-		switch (l->tag) {
-		case SKO_LIST:
-			fprintf(stderr, "PANIC! Equality testing not yet implemented for lists.\n");
-			env->panic = 1;
-			longjmp(env->jmp, 1);
-		default:
-			if (l->data.list == r->data.list) {
-				skE_stackPush(env, skO_boolean_new(1));
-			} else {
-				skE_stackPush(env, skO_boolean_new(0));
-			}
-		}
+	if (skO_eql(l, r)) {
+		skE_stackPush(env, skO_boolean_new(1));
 	} else {
 		skE_stackPush(env, skO_boolean_new(0));
 	}
