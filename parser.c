@@ -29,6 +29,7 @@ To enable the printing of debug information, define the constant
 `SK_PARSER_DEBUG` when compiling the interpreter.
 */
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <setjmp.h>
 #include "shirka.h"
@@ -43,24 +44,13 @@ To enable the printing of debug information, define the constant
 The following macros are used by token extractors as character categories.
 */
 
-#define LETTER_UP(c) (c >= 'A' && c <= 'Z')
+#define IDENTIFIER_START(c) (isalpha(c)                                      \
+	|| c == '*' || c == '+' || c == '-' || c == '/' || c == '<'          \
+	|| c == '=' || c == '>' || c == '^' || c == '!' || c == '&'          \
+	|| c == '.' || c == '?' || c == '|' || c == '~' || c == '$'          \
+	|| c == '%')
 
-#define LETTER_DOWN(c) (c >= 'a' && c <= 'z')
-
-#define LETTER(c) (LETTER_UP(c) || LETTER_DOWN(c) || c == '_')
-
-#define DIGIT(c) (c >= '0' && c <= '9')
-
-#define WHITESPACE(c) (c == ' ' || c == '\t' || c == '\n')
-
-#define IDENTIFIER_START(c) (LETTER(c)                                       \
-	|| c == '!' || c == '#' || c == '$'  || c == '%' || c == '&'         \
-	|| c == '*' || c == '+' || c == ','  || c == '-' || c == '.'         \
-	|| c == '/' || c == ';' || c == '<'  || c == '=' || c == '>'         \
-	|| c == '?' || c == '@' || c == '\\' || c == '^' || c == '|'         \
-	|| c == '~')
-
-#define IDENTIFIER_CONT(c) (IDENTIFIER_START(c) || DIGIT(c) || c == '\'')
+#define IDENTIFIER_CONT(c) (IDENTIFIER_START(c) || isdigit(c) || c == '\'')
 
 /*//////////////////////////////////////////////////////////////////////////*/
 
@@ -94,7 +84,7 @@ void consume_leading (char **next)
 	char *c = *next;
 
 	while (*c != 0) {
-		if (WHITESPACE(*c)) {
+		if (isspace(*c)) {
 			c++;
 		} else if (c[0] == '-' && c[1] == '-') {
 			while (*c != '\n' && *c != 0)
@@ -122,7 +112,7 @@ skO *parse_number (char **next)
 		return NULL;
 
 	while (1) {
-		if (DIGIT(*c)) {
+		if (isdigit(*c)) {
 			buffer[i] = *c;
 			i++;
 			c++;
@@ -137,7 +127,7 @@ skO *parse_number (char **next)
 		c++;
 
 		while (1) {
-			if (DIGIT(*c)) {
+			if (isdigit(*c)) {
 				buffer[i] = *c;
 				i++;
 				c++;
