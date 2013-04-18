@@ -6,59 +6,40 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
--- Library for automated testing of Shirka programs (particularly unit
--- testing). This library is still a work in progress, implementing bare
--- features only, and not checking for everything.
---
--- Usage
--- -----
---
---     (with) "lib/test.shk"
---
---     (test/runSuite) [
---
---       ("true" test/case) [
---
---         -- execute code and reserve values here
---
---         (test/assertions) [
---           [ TRUE ]
---           ...
---           ...
---         ]
---       ]
---
---       ...
---       ...
---     ]
+(=> test/run) [
+  (=> assert_equal) [
+    -> $assert/op
+    (try)    [ $assert/op !  ]
+    (rescue) [ abort ]
 
-------------------------------------------------------------------------------
-(=> test/runSuite)
--- Expects: .. List
--- Run a "test suite", i.e. a list containing *test cases*.
-  [ ! '\n print ]
+    length? 2 = not (!?) [abort]
 
-------------------------------------------------------------------------------
-(=> test/case)
--- Expects: .. List String
--- Describe a test case in a list. A test case consists of arbitrary code
--- followed by a single list of *assertions*.
-  [ -> description
-    => test-case
+    -- uncons >< uncons >< << ><
+    uncons -> result
+    uncons -> expected
+    <<
 
-    (try)    [ test-case ]
-    (rescue) [ FALSE     ]
+    result expected = not (!?) [
+      "Equality failed:" puts
+      "  Expected: " print expected puts
+      "    Result: " print result   puts
+      "" puts
+    ]
+  ]
 
-    uncons >< <<
+  (=> assert_error) [
+    -> $assert/op
+    (try) [ $assert/op ! ]
+    :$try/failed =
+    (if) [
+      [ << ]
+      [ <<
+        "Error was expected but did not happen:" puts
+        "  " print $assert/op puts "" puts ]
+    ]
+  ]
 
-    (if)
-      [ [ '. print ]
-        [ 'F print ] ] ]
+  "-- Running tests... (Only failed tests are displayed)\n" puts
 
-------------------------------------------------------------------------------
-(=> test/assertions)
--- Expects: .. List
--- Take a list of assertions. An assertion is an executable list returning
--- a boolean: TRUE if the assertion is a success, FALSE if it is a failure.
-  [ (map)       [ !   ]
-    (TRUE fold) [ and ] ]
+  !
+]
