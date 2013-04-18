@@ -164,7 +164,7 @@ skO *parse_character (char **next, jmp_buf jmp)
 			*next = c;
 			return skO_character_new('\n');
 		} else {
-			FATAL("PANIC! Unknown escape sequence.\n");
+			FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
 			longjmp(jmp, 1);
 		}
 	} else {
@@ -345,7 +345,7 @@ skO *parse_string (char **next, jmp_buf jmp)
 				sk_list_append(list, skO_character_new('\n'));
 				break;
 			default:
-				FATAL("PANIC! Unknown escape sequence.\n");
+				FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
 				longjmp(jmp, 1);
 			}
 		} else {
