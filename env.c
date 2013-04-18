@@ -10,8 +10,8 @@ skO *skE_stackPop (skE *env)
 {
 	skO *obj;
 
-	if (env->stack == NULL) {
-		printf("PANIC! Tried to pop object but stack is empty.\n");
+	if (!env->stack) {
+		fprintf(stderr, "PANIC! Tried to pop object but stack is empty.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -40,9 +40,9 @@ reserved *scope_find (skE *env, skO *sym)
 
 	skO_checkType(sym, SKO_SYMBOL);
 
-	while (current_scope != NULL) {
+	while (current_scope) {
 		node = current_scope->first_def;
-		while (node != NULL) {
+		while (node) {
 			next = node->next;
 			if (node->sym == sym->data.sym) {
 				return node;
@@ -61,7 +61,7 @@ reserved *scope_find_current (skE *env, skO *sym)
 	reserved *next;
 
 	node = env->scope->first_def;
-	while (node != NULL) {
+	while (node) {
 		next = node->next;
 		if (node->sym == sym->data.sym) {
 			return node;
@@ -74,7 +74,7 @@ reserved *scope_find_current (skE *env, skO *sym)
 
 skE *skE_new (void)
 {
-	skE *env = (skE *)malloc(sizeof(skE));
+	skE *env = malloc(sizeof(skE));
 	env->stack = NULL;
 	env->scope = NULL;
 	env->panic = 0;
@@ -99,7 +99,7 @@ void skE_defNative (skE *env, char *name, skE_natOp *native)
 	reserved *slot;
 	skO *obj = skO_symbol_new(name);
 
-	slot              = (reserved *)malloc(sizeof(reserved));
+	slot              = malloc(sizeof(reserved));
 	slot->next        = env->scope->first_def;
 	slot->sym         = obj->data.sym;
 	slot->kind        = KIND_NATIVE;
@@ -116,11 +116,11 @@ void skE_defObject (skE *env, skO *sym, skO *obj)
 
 	skO_checkType(sym, SKO_QSYMBOL);
 
-	if (scope_find_current(env, sym) != NULL) {
+	if (scope_find_current(env, sym)) {
 		/* Release previously defined object? */
 	}
 
-	slot           = (reserved *)malloc(sizeof(reserved));
+	slot           = malloc(sizeof(reserved));
 	slot->next     = scope_get(env)->first_def;
 	slot->sym      = sym->data.sym;
 	slot->kind     = KIND_OBJECT;
@@ -138,13 +138,13 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 	skO_checkType(sym, SKO_QSYMBOL);
 	skO_checkType(obj, SKO_LIST);
 
-	if (scope_find_current(env, sym) != NULL) {
-		printf("PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
+	if (scope_find_current(env, sym)) {
+		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
-	slot           = (reserved *)malloc(sizeof(reserved));
+	slot           = malloc(sizeof(reserved));
 	slot->next     = scope_get(env)->first_def;
 	slot->sym      = sym->data.sym;
 	slot->kind     = KIND_OPERATION;
@@ -164,14 +164,14 @@ void skE_undef (skE *env, skO *sym)
 
 	r = scope_find_current(env, sym);
 
-	if (r == NULL) {
-		printf("PANIC! Reserved object not found in current scope.\n");
+	if (!r) {
+		fprintf(stderr, "PANIC! Reserved object not found in current scope.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
 	if (r->kind != KIND_OBJECT) {
-		printf("PANIC! Expected object, got native or operation.\n");
+		fprintf(stderr, "PANIC! Expected object, got native or operation.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -194,7 +194,7 @@ void skE_undef (skE *env, skO *sym)
 
 void skE_scopePush (skE *env)
 {
-	context *ct = (context *)malloc(sizeof(context));
+	context *ct = malloc(sizeof(context));
 	ct->parent = env->scope;
 	ct->first_def = NULL;
 	env->scope = ct;
@@ -205,11 +205,11 @@ void p_scope_data (skE *env)
 {
 	reserved *r = env->scope->first_def;
 	printf("[");
-	if (r != NULL) {
+	if (r) {
 		printf("%s", r->sym->name);
 		r = r->next;
 	}
-	while (r != NULL) {
+	while (r) {
 		printf(" %s", r->sym->name);
 		r = r->next;
 	}
@@ -232,7 +232,7 @@ void skE_scopePop (skE *env)
 	env->scope = expired->parent;
 
 	node = expired->first_def;
-	while (node != NULL) {
+	while (node) {
 		next = node->next;
 		if (node->kind == KIND_OBJECT || node->kind == KIND_OPERATION) {
 			skO_free(node->data.obj);
@@ -270,15 +270,15 @@ void skE_execList (skE *env, skO *list, int scoping)
 #ifdef SK_O_TAIL
 tail:
 #endif
-	while (head != NULL) {
+	while (head) {
 		tok = head;
 		head = head->next;
 
 		switch (tok->tag) {
 		case SKO_SYMBOL:
 			r = scope_find(env, tok);
-			if (r == NULL) {
-				printf("PANIC! Not found: %s\n", (tok->data.sym)->name);
+			if (!r) {
+				fprintf(stderr, "PANIC! Not found: %s\n", (tok->data.sym)->name);
 				env->panic = 1;
 				longjmp(env->jmp, 1);
 			}
@@ -288,15 +288,15 @@ tail:
 				break;
 			case KIND_OPERATION:
 				#ifdef SK_O_TAIL
-				if (tok->next == NULL) {
+				if (tok->next) {
+					skE_execList(env, skO_clone(r->data.obj), 1);
+				} else {
 					skO_free(tok);
 					tok = skO_clone(r->data.obj);
 					head = tok->data.list;
 					tok->data.list = NULL;
 					skO_free(tok);
 					goto tail;
-				} else {
-					skE_execList(env, skO_clone(r->data.obj), 1);
 				}
 				#else
 				skE_execList(env, skO_clone(r->data.obj), 1);
@@ -306,27 +306,25 @@ tail:
 				#ifdef SK_O_TAIL
 				cont = r->data.native(env);
 
-				if (tok->next == NULL) {
-
-					if (cont != NULL) {
+				if (cont) {
+					if (tok->next) {
+						skE_execList(env, cont, 1);
+					} else {
 						skO_free(tok);
 						head = cont->data.list;
 						cont->data.list = NULL;
 						skO_free(cont);
 						goto tail;
 					}
-				} else {
-					if (cont != NULL)
-						skE_execList(env, cont, 1);
 				}
 				#else
 				cont = r->data.native(env);
-				if (cont != NULL)
+				if (cont)
 					skE_execList(env, cont, 1);
 				#endif
 				break;
 			default:
-				printf("PANIC! Internal kind error.\n");
+				fprintf(stderr, "PANIC! Internal kind error.\n");
 				longjmp(env->jmp, 1);
 			}
 
@@ -340,7 +338,7 @@ tail:
 			skE_stackPush(env, tok);
 			break;
 		default:
-			printf("PANIC! Internal type error.\n");
+			fprintf(stderr, "PANIC! Internal type error.\n");
 			env->panic = 1;
 			longjmp(env->jmp, 1);
 		}
@@ -360,13 +358,13 @@ skO *skO_loadParse (char *path)
 	jmp_buf jmp;
 
 	if (setjmp(jmp)) {
-		printf("Syntax error in file %s\n", path);
+		fprintf(stderr, "Syntax error in file %s\n", path);
 		exit(EXIT_FAILURE);
 	}
 
 	f = fopen(path, "rb");
-	if (f == NULL) {
-		printf("INTERPRETER ERROR! Could not open file.\n");
+	if (!f) {
+		fprintf(stderr, "INTERPRETER ERROR! Could not open file %s.\n", path);
 		exit(EXIT_FAILURE);
 	}
 	/* get file size */
@@ -374,7 +372,7 @@ skO *skO_loadParse (char *path)
 	f_size = ftell(f);
 	fseek(f, 0, SEEK_SET);
 	/* copy source into string */
-	src = (char *)malloc(f_size);
+	src = malloc(f_size);
 	fread(src, f_size, 1, f);
 	src[f_size] = 0;
 	fclose(f);

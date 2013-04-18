@@ -11,7 +11,7 @@ symbol *symbol_id_from_string (char *str)
 {
 	symbol *sym = symbol_list;
 
-	while (sym != NULL) {
+	while (sym) {
 		if (strcmp(str, sym->name) == 0) {
 			goto symbol_found;
 		}
@@ -19,7 +19,7 @@ symbol *symbol_id_from_string (char *str)
 		sym = sym->next;
 	}
 
-	sym = (symbol *)malloc(sizeof(symbol));
+	sym = malloc(sizeof(symbol));
 	strcpy(sym->name, str);
 	sym->next = symbol_list;
 
@@ -35,7 +35,7 @@ skO *skO_clone (skO *obj)
 	skO *iter;
 	skO *child_copy;
 
-	copy       = (skO *)malloc(sizeof(skO));
+	copy       = malloc(sizeof(skO));
 	copy->next = NULL;
 	copy->tag  = obj->tag;
 
@@ -51,7 +51,7 @@ skO *skO_clone (skO *obj)
 		copy->data.list = NULL;
 
 		iter = obj->data.list;
-		while (iter != NULL) {
+		while (iter) {
 			child_copy = skO_clone(iter);
 			sk_list_append(copy, child_copy);
 			iter = iter->next;
@@ -59,7 +59,7 @@ skO *skO_clone (skO *obj)
 
 		break;
 	default:
-		printf("Internal type error.\n");
+		fprintf(stderr, "Internal type error.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -74,7 +74,7 @@ void skO_free (skO *obj)
 	switch (obj->tag) {
 	case SKO_LIST:
 		node = obj->data.list;
-		while (node != NULL) {
+		while (node) {
 			next = node->next;
 
 			skO_free(node);
@@ -88,7 +88,7 @@ void skO_free (skO *obj)
 		free (obj);
 		break;
 	default:
-		printf("Internal type error.\n");
+		fprintf(stderr, "Internal type error.\n");
 		exit(EXIT_FAILURE);
 		break;
 	}
@@ -96,7 +96,7 @@ void skO_free (skO *obj)
 
 skO *skO_number_new (double d)
 {
-	skO *obj = (skO *)malloc(sizeof(skO));
+	skO *obj = malloc(sizeof(skO));
 
 	obj->next        = NULL;
 	obj->tag         = SKO_NUMBER;
@@ -107,7 +107,7 @@ skO *skO_number_new (double d)
 
 skO *skO_boolean_new (int b)
 {
-	skO *obj = (skO *)malloc(sizeof(skO));
+	skO *obj = malloc(sizeof(skO));
 
 	obj->next         = NULL;
 	obj->tag          = SKO_BOOLEAN;
@@ -118,7 +118,7 @@ skO *skO_boolean_new (int b)
 
 skO *skO_character_new (char c)
 {
-	skO *obj = (skO *)malloc(sizeof(skO));
+	skO *obj = malloc(sizeof(skO));
 
 	obj->next           = NULL;
 	obj->tag            = SKO_CHARACTER;
@@ -129,7 +129,7 @@ skO *skO_character_new (char c)
 
 skO *skO_quoted_symbol_new (char *a)
 {
-	skO *obj = (skO *)malloc(sizeof(skO));
+	skO *obj = malloc(sizeof(skO));
 
 	obj->next     = NULL;
 	obj->tag      = SKO_QSYMBOL;
@@ -140,7 +140,7 @@ skO *skO_quoted_symbol_new (char *a)
 
 skO *skO_symbol_new (char *a)
 {
-	skO *obj = (skO *)malloc(sizeof(skO));
+	skO *obj = malloc(sizeof(skO));
 
 	obj->next     = NULL;
 	obj->tag      = SKO_SYMBOL;
@@ -151,7 +151,7 @@ skO *skO_symbol_new (char *a)
 
 skO *skO_list_new (void)
 {
-	skO *obj = (skO *)malloc(sizeof(skO));
+	skO *obj = malloc(sizeof(skO));
 
 	obj->next      = NULL;
 	obj->tag       = SKO_LIST;
@@ -168,13 +168,13 @@ void sk_list_append (skO *list, skO *obj)
 
 	node = list->data.list;
 
-	if (node == NULL) {
-		list->data.list = obj;
-	} else {
-		while (node->next != NULL) {
+	if (node) {
+		while (node->next) {
 			node = node->next;
 		}
 		node->next = obj;
+	} else {
+		list->data.list = obj;
 	}
 }
 
@@ -195,7 +195,7 @@ const char *tystr (size_t i)
 	case SKO_SYMBOL:    return SYMBOL_AS_STRING;
 	case SKO_LIST:      return LIST_AS_STRING;
 	default:
-		printf("Internal type error.\n");
+		fprintf(stderr, "Internal type error.\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -205,7 +205,7 @@ void skO_checkType(skO *obj, skO_t type)
 	if (obj->tag == type)
 		return;
 
-	printf("INTERPRETER ERROR! Expected `%s' but got `%s'.\n",
+	fprintf(stderr, "INTERPRETER ERROR! Expected `%s' but got `%s'.\n",
 		tystr(type), tystr(obj->tag));
 	exit(EXIT_FAILURE);
 }
