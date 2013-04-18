@@ -62,14 +62,15 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim);
 /*
 Token extractors
 */
-skO *parse_number      (char **next);
-skO *parse_character   (char **next, jmp_buf jmp);
-skO *parse_qidentifier (char **next);
-skO *parse_identifier  (char **next);
-skO *parse_op_def      (char **next);
-skO *parse_obj_reserve (char **next);
-skO *parse_obj_restore (char **next);
-skO *parse_string      (char **next, jmp_buf jmp);
+skO *parse_number            (char **next);
+skO *parse_character         (char **next, jmp_buf jmp);
+skO *parse_character_literal (char **next, jmp_buf jmp);
+skO *parse_qidentifier       (char **next);
+skO *parse_identifier        (char **next);
+skO *parse_op_def            (char **next);
+skO *parse_obj_reserve       (char **next);
+skO *parse_obj_restore       (char **next);
+skO *parse_string_literal    (char **next, jmp_buf jmp);
 
 /*
 Consume leading whitespace and comments. `next' is set to point to the next
@@ -145,37 +146,44 @@ skO *parse_number (char **next)
 	return skO_number_new(strtod(buffer, dummy));
 }
 
+skO *parse_character_literal (char **next, jmp_buf jmp)
+{
+	if (**next != '\'')
+		return NULL;
+
+	++*next;
+	return parse_character(next, jmp);
+
+}
+
 skO *parse_character (char **next, jmp_buf jmp)
 {
 	char *c = *next;
-	char char_literal;
+	char result = 0;
 
-	if (*c != '\'')
-		return NULL;
-
-	c++;
 	if (*c == '\\') {
 		c++;
-		if (*c == 'n') {
-			#ifdef SK_PARSER_DEBUG
-			printf("Parsed CHARACTER:   \\%c\n", *c);
-			#endif
-			c++;
-			*next = c;
-			return skO_character_new('\n');
-		} else {
+		switch (*c) {
+		case 'n':
+			result = '\n';
+			break;
+		default:
 			FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
 			longjmp(jmp, 1);
 		}
+		#ifdef SK_PARSER_DEBUG
+		printf("Parsed CHARACTER:   \\%c\n", *c);
+		#endif
 	} else {
-		char_literal = *c;
-		c++;
-		*next = c;
+		result = *c;
 		#ifdef SK_PARSER_DEBUG
 		printf("Parsed CHARACTER:   %c\n", *c);
 		#endif
-		return skO_character_new(char_literal);
 	}
+
+	c++;
+	*next = c;
+	return skO_character_new(result);
 }
 
 skO *parse_qidentifier (char **next)
@@ -326,36 +334,20 @@ skO *parse_obj_restore (char **next)
 	return NULL;
 }
 
-skO *parse_string (char **next, jmp_buf jmp)
+skO *parse_string_literal (char **next, jmp_buf jmp)
 {
 	skO *list;
-	char *c = *next;
 
-	if (*c != '"')
+	if (**next != '"')
 		return NULL;
 
-	c++;
+	++*next;
 	list = skO_list_new();
 
-	while (*c != '"') {
-		if (*c == '\\') {
-			c++;
-			switch (*c) {
-			case 'n':
-				sk_list_append(list, skO_character_new('\n'));
-				break;
-			default:
-				FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
-				longjmp(jmp, 1);
-			}
-		} else {
-			sk_list_append(list, skO_character_new(*c));
-		}
-		c++;
-	}
-	c++;
+	while (**next != '"')
+		sk_list_append(list, parse_character(next, jmp));
+	++*next;
 
-	*next = c;
 	#ifdef SK_PARSER_DEBUG
 	printf("Parsed STRING\n");
 	#endif
@@ -446,11 +438,11 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* Handle regular tokens. */
 
-		if ((obj = parse_string(&src, pe))
+		if ((obj = parse_string_literal(&src, pe))
 			|| (obj = parse_number(&src))
 			|| (obj = parse_qidentifier(&src))
 			|| (obj = parse_identifier(&src))
-			|| (obj = parse_character(&src, pe))
+			|| (obj = parse_character_literal(&src, pe))
 			|| (obj = skO_parse(&src, pe, "[]")))
 			goto matched;
 
