@@ -401,7 +401,7 @@ void load_intrinsics (skE *env)
 	skE_defNative(env, "quote",     &skI_quote);
 	skE_defNative(env, "unquote",   &skI_unquote);
 	/* List operations */
-	skE_defNative(env, "length",    &skI_length);
+	skE_defNative(env, "length?",   &skI_length);
 	skE_defNative(env, "cons",      &skI_cons);
 	skE_defNative(env, "uncons",    &skI_uncons);
 	/* Reserving operations */

@@ -22,7 +22,7 @@
         [                            ] ] ]
 
 (=> exit-cmd?)
-  [ length 1 =
+  [ length? 1 =
     (if)
       [ [      >> uncons >< <<
           [/exit] uncons >< <<

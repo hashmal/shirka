@@ -72,7 +72,7 @@
 -- Execute the first list with a single element from the second list available
 -- on the stack, until no element remains.
   [ => $each/op
-    length -> n
+    length? -> n
     (<- n times)
       [ uncons ><
         -> $each/remainder
@@ -85,7 +85,7 @@
 -- Expected: .. List
 -- Reverse the order of the elements in the list.
   [ "" ><
-    ([length 0 = not] while)
+    ([length? 0 = not] while)
       [ -> src
         -> dest
         <- src uncons -> el -> src
@@ -113,7 +113,7 @@
 -- string as a Shirka program, ensure it contains only one object, then put
 -- this object on the stack.
   [ gets $parse
-    length 1 =
+    length? 1 =
     (if)
       [ [ uncons >< << ]
         [ abort        ] ] ]
@@ -139,7 +139,7 @@
 (=> fold)
 -- Expected: .. List List Number
   [ -> seed => $fold/op
-    length 0 = [ abort ] !?
+    length? 0 = [ abort ] !?
 
     <- seed ><
     [ $fold/op ] each ]
@@ -215,7 +215,7 @@
 -- Expected: .. List List
 -- Concatenate two lists.
   [ >< reverse
-    ([length 0 >] while)
+    ([length? 0 >] while)
       [ uncons >< -> r cons <- r ]
     << ]
 
