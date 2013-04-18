@@ -59,7 +59,7 @@ skO *skO_clone (skO *obj)
 
 		break;
 	default:
-		printf("Internal type error.\n");
+		fprintf(stderr, "Internal type error.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -88,7 +88,7 @@ void skO_free (skO *obj)
 		free (obj);
 		break;
 	default:
-		printf("Internal type error.\n");
+		fprintf(stderr, "Internal type error.\n");
 		exit(EXIT_FAILURE);
 		break;
 	}
@@ -195,7 +195,7 @@ const char *tystr (size_t i)
 	case SKO_SYMBOL:    return SYMBOL_AS_STRING;
 	case SKO_LIST:      return LIST_AS_STRING;
 	default:
-		printf("Internal type error.\n");
+		fprintf(stderr, "Internal type error.\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -205,7 +205,7 @@ void skO_checkType(skO *obj, skO_t type)
 	if (obj->tag == type)
 		return;
 
-	printf("INTERPRETER ERROR! Expected `%s' but got `%s'.\n",
+	fprintf(stderr, "INTERPRETER ERROR! Expected `%s' but got `%s'.\n",
 		tystr(type), tystr(obj->tag));
 	exit(EXIT_FAILURE);
 }

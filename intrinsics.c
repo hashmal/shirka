@@ -89,7 +89,7 @@ SK_INTRINSIC skI_print (skE *env)
 		}
 		break;
 	default:
-		printf("PANIC! Internal type error.\n");
+		fprintf(stderr, "PANIC! Internal type error.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -389,7 +389,7 @@ SK_INTRINSIC skI_eql (skE *env)
 	if (l->tag == r->tag) {
 		switch (l->tag) {
 		case SKO_LIST:
-			printf("PANIC! Equality testing not yet implemented for lists.\n");
+			fprintf(stderr, "PANIC! Equality testing not yet implemented for lists.\n");
 			env->panic = 1;
 			longjmp(env->jmp, 1);
 		default:
@@ -505,7 +505,7 @@ SK_INTRINSIC skI_type (skE *env)
 		sym = skO_symbol_new("Boolean");
 		break;
 	default:
-		printf("PANIC! Internal type error: %i\n", obj->tag);
+		fprintf(stderr, "PANIC! Internal type error: %i\n", obj->tag);
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}

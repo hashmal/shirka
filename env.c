@@ -11,7 +11,7 @@ skO *skE_stackPop (skE *env)
 	skO *obj;
 
 	if (env->stack == NULL) {
-		printf("PANIC! Tried to pop object but stack is empty.\n");
+		fprintf(stderr, "PANIC! Tried to pop object but stack is empty.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -139,7 +139,7 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 	skO_checkType(obj, SKO_LIST);
 
 	if (scope_find_current(env, sym) != NULL) {
-		printf("PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
+		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -165,13 +165,13 @@ void skE_undef (skE *env, skO *sym)
 	r = scope_find_current(env, sym);
 
 	if (r == NULL) {
-		printf("PANIC! Reserved object not found in current scope.\n");
+		fprintf(stderr, "PANIC! Reserved object not found in current scope.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
 	if (r->kind != KIND_OBJECT) {
-		printf("PANIC! Expected object, got native or operation.\n");
+		fprintf(stderr, "PANIC! Expected object, got native or operation.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -278,7 +278,7 @@ tail:
 		case SKO_SYMBOL:
 			r = scope_find(env, tok);
 			if (r == NULL) {
-				printf("PANIC! Not found: %s\n", (tok->data.sym)->name);
+				fprintf(stderr, "PANIC! Not found: %s\n", (tok->data.sym)->name);
 				env->panic = 1;
 				longjmp(env->jmp, 1);
 			}
@@ -326,7 +326,7 @@ tail:
 				#endif
 				break;
 			default:
-				printf("PANIC! Internal kind error.\n");
+				fprintf(stderr, "PANIC! Internal kind error.\n");
 				longjmp(env->jmp, 1);
 			}
 
@@ -340,7 +340,7 @@ tail:
 			skE_stackPush(env, tok);
 			break;
 		default:
-			printf("PANIC! Internal type error.\n");
+			fprintf(stderr, "PANIC! Internal type error.\n");
 			env->panic = 1;
 			longjmp(env->jmp, 1);
 		}
@@ -360,13 +360,13 @@ skO *skO_loadParse (char *path)
 	jmp_buf jmp;
 
 	if (setjmp(jmp)) {
-		printf("Syntax error in file %s\n", path);
+		fprintf(stderr, "Syntax error in file %s\n", path);
 		exit(EXIT_FAILURE);
 	}
 
 	f = fopen(path, "rb");
 	if (f == NULL) {
-		printf("INTERPRETER ERROR! Could not open file.\n");
+		fprintf(stderr, "INTERPRETER ERROR! Could not open file.\n");
 		exit(EXIT_FAILURE);
 	}
 	/* get file size */

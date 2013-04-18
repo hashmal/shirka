@@ -488,7 +488,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* If everything failed... */
 
-		printf("PANIC! Parsing error: %s\n", src);
+		fprintf(stderr, "PANIC! Parsing error: %s\n", src);
 		longjmp(jmp, 1);
 
 	matched:
