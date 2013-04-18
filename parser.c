@@ -164,8 +164,17 @@ skO *parse_character (char **next, jmp_buf jmp)
 	if (*c == '\\') {
 		c++;
 		switch (*c) {
+		case '\\':
+			result = '\\';
+			break;
 		case 'n':
 			result = '\n';
+			break;
+		case 's':
+			result = ' ';
+			break;
+		case 't':
+			result = '\t';
 			break;
 		default:
 			FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
