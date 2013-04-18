@@ -400,17 +400,26 @@ int skO_eql (skO *l, skO *r)
 				rn = rn->next;
 			}
 
-			if (ln != rn) {
+			if ((!ln && rn) || (ln && !rn)) {
 				return 0;
 			} else {
 				return 1;
 			}
+		case SKO_CHARACTER:
+			if (l->data.character == r->data.character)
+				return 1;
+		case SKO_BOOLEAN:
+			if (l->data.boolean == r->data.boolean)
+				return 1;
+		case SKO_SYMBOL:
+		case SKO_QSYMBOL:
+			if (l->data.sym == r->data.sym)
+				return 1;
+		case SKO_NUMBER:
+			if (l->data.number == r->data.number)
+				return 1;
 		default:
-			if (l->data.list == r->data.list) {
-				return 1;
-			} else {
-				return 0;
-			}
+			return 0;
 		}
 	} else {
 		return 0;
