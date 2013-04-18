@@ -44,7 +44,7 @@ To enable the printing of debug information, define the constant
 The following macros are used by token extractors as character categories.
 */
 
-#define IDENTIFIER_START(c) (isalpha(c)                                      \
+#define IDENTIFIER_START(c) (isalpha(c) || c == '_'                          \
 	|| c == '!' || c == '#' || c == '$'  || c == '%' || c == '&'         \
 	|| c == '*' || c == '+' || c == ','  || c == '-' || c == '.'         \
 	|| c == '/' || c == ';' || c == '<'  || c == '=' || c == '>'         \
