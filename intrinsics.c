@@ -11,7 +11,7 @@ void print_list (skO *list)
 {
 	skO *node = list->data.list;
 
-	while (node != NULL) {
+	while (node) {
 		switch (node->tag) {
 		case SKO_QSYMBOL:
 		case SKO_SYMBOL:
@@ -330,7 +330,7 @@ SK_INTRINSIC skI_parse (skE *env)
 	skO_checkType(list, SKO_LIST);
 
 	node = list->data.list;
-	while (node != NULL) {
+	while (node) {
 		count++;
 		node = node->next;
 	}
@@ -338,7 +338,7 @@ SK_INTRINSIC skI_parse (skE *env)
 	str = (char *)malloc(count);
 
 	node = list->data.list;
-	while (node != NULL) {
+	while (node) {
 		str[i] = node->data.character;
 		i++;
 		node = node->next;
@@ -415,7 +415,7 @@ SK_INTRINSIC skI_length (skE *env)
 	skO *list = skE_stackPop(env);
 	skO *node = list->data.list;
 
-	while (node != NULL) {
+	while (node) {
 		len++;
 		node = node->next;
 	}
@@ -465,7 +465,7 @@ SK_INTRINSIC skI_with (skE *env)
 	skO_checkType(fname, SKO_LIST);
 	skchar = fname->data.list;
 
-	while (skchar != NULL) {
+	while (skchar) {
 		buffer[i] = skchar->data.character;
 		skchar = skchar->next;
 		i++;

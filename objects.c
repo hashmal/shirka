@@ -11,7 +11,7 @@ symbol *symbol_id_from_string (char *str)
 {
 	symbol *sym = symbol_list;
 
-	while (sym != NULL) {
+	while (sym) {
 		if (strcmp(str, sym->name) == 0) {
 			goto symbol_found;
 		}
@@ -51,7 +51,7 @@ skO *skO_clone (skO *obj)
 		copy->data.list = NULL;
 
 		iter = obj->data.list;
-		while (iter != NULL) {
+		while (iter) {
 			child_copy = skO_clone(iter);
 			sk_list_append(copy, child_copy);
 			iter = iter->next;
@@ -74,7 +74,7 @@ void skO_free (skO *obj)
 	switch (obj->tag) {
 	case SKO_LIST:
 		node = obj->data.list;
-		while (node != NULL) {
+		while (node) {
 			next = node->next;
 
 			skO_free(node);
@@ -168,13 +168,13 @@ void sk_list_append (skO *list, skO *obj)
 
 	node = list->data.list;
 
-	if (node == NULL) {
-		list->data.list = obj;
-	} else {
-		while (node->next != NULL) {
+	if (node) {
+		while (node->next) {
 			node = node->next;
 		}
 		node->next = obj;
+	} else {
+		list->data.list = obj;
 	}
 }
 

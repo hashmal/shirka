@@ -275,7 +275,7 @@ skO *parse_op_def (char **next)
 		src++;
 		consume_leading(&src);
 		sym = parse_identifier(&src);
-		if (sym != NULL) {
+		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
 			#ifdef SK_PARSER_DEBUG
@@ -298,7 +298,7 @@ skO *parse_obj_reserve (char **next)
 		src++;
 		consume_leading(&src);
 		sym = parse_identifier(&src);
-		if (sym != NULL) {
+		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
 			#ifdef SK_PARSER_DEBUG
@@ -321,7 +321,7 @@ skO *parse_obj_restore (char **next)
 		src++;
 		consume_leading(&src);
 		sym = parse_identifier(&src);
-		if (sym != NULL) {
+		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
 			#ifdef SK_PARSER_DEBUG
@@ -382,18 +382,13 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	consume_leading(&src);
 
 	if (setjmp(pe)) {
-		if (prefixed != NULL)
+		if (prefixed)
 			free(prefixed);
 		skO_free(list);
 		printf("parse jmp\n");
 	}
 
-	if (delim == NULL) {
-		if (*src == 0) {
-			ended = 1;
-			exit(EXIT_FAILURE);
-		}
-	} else {
+	if (delim) {
 		if (*src == delim[0]) {
 			src++;
 			consume_leading(&src);
@@ -402,6 +397,11 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 			#endif
 		} else {
 			return NULL;
+		}
+	} else {
+		if (*src == 0) {
+			ended = 1;
+			exit(EXIT_FAILURE);
 		}
 	}
 
@@ -416,7 +416,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* Handle end of lists and prefixed syntax. */
 
-		if (delim != NULL) {
+		if (delim) {
 			if (*src == delim[1]) {
 				src++;
 				*next = src;
@@ -430,27 +430,27 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		/* Handle "prefix style" syntactic sugar. */
 
 		prefixed = skO_parse(&src, pe, "()");
-		if (prefixed != NULL)
+		if (prefixed)
 			consume_leading(&src);
 
 		/* Handle "reserving operations" syntactic sugar. */
 
 		obj = parse_op_def(&src);
-		if (obj != NULL) {
+		if (obj) {
 			sk_list_append(list, obj);
 			obj = skO_symbol_new("$=>");
 			goto matched;
 		}
 
 		obj = parse_obj_reserve(&src);
-		if (obj != NULL) {
+		if (obj) {
 			sk_list_append(list, obj);
 			obj = skO_symbol_new("$->");
 			goto matched;
 		}
 
 		obj = parse_obj_restore(&src);
-		if (obj != NULL) {
+		if (obj) {
 			sk_list_append(list, obj);
 			obj = skO_symbol_new("$<-");
 			goto matched;
@@ -474,7 +474,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	matched:
 		sk_list_append(list, obj);
 		
-		if (prefixed != NULL) {
+		if (prefixed) {
 			sk_list_append(list, prefixed->data.list);
 			free(prefixed);
 			prefixed = NULL;

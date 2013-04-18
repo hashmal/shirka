@@ -10,7 +10,7 @@ skO *skE_stackPop (skE *env)
 {
 	skO *obj;
 
-	if (env->stack == NULL) {
+	if (!env->stack) {
 		fprintf(stderr, "PANIC! Tried to pop object but stack is empty.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
@@ -40,9 +40,9 @@ reserved *scope_find (skE *env, skO *sym)
 
 	skO_checkType(sym, SKO_SYMBOL);
 
-	while (current_scope != NULL) {
+	while (current_scope) {
 		node = current_scope->first_def;
-		while (node != NULL) {
+		while (node) {
 			next = node->next;
 			if (node->sym == sym->data.sym) {
 				return node;
@@ -61,7 +61,7 @@ reserved *scope_find_current (skE *env, skO *sym)
 	reserved *next;
 
 	node = env->scope->first_def;
-	while (node != NULL) {
+	while (node) {
 		next = node->next;
 		if (node->sym == sym->data.sym) {
 			return node;
@@ -116,7 +116,7 @@ void skE_defObject (skE *env, skO *sym, skO *obj)
 
 	skO_checkType(sym, SKO_QSYMBOL);
 
-	if (scope_find_current(env, sym) != NULL) {
+	if (scope_find_current(env, sym)) {
 		/* Release previously defined object? */
 	}
 
@@ -138,7 +138,7 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 	skO_checkType(sym, SKO_QSYMBOL);
 	skO_checkType(obj, SKO_LIST);
 
-	if (scope_find_current(env, sym) != NULL) {
+	if (scope_find_current(env, sym)) {
 		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
 		env->panic = 1;
 		longjmp(env->jmp, 1);
@@ -164,7 +164,7 @@ void skE_undef (skE *env, skO *sym)
 
 	r = scope_find_current(env, sym);
 
-	if (r == NULL) {
+	if (!r) {
 		fprintf(stderr, "PANIC! Reserved object not found in current scope.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
@@ -205,11 +205,11 @@ void p_scope_data (skE *env)
 {
 	reserved *r = env->scope->first_def;
 	printf("[");
-	if (r != NULL) {
+	if (r) {
 		printf("%s", r->sym->name);
 		r = r->next;
 	}
-	while (r != NULL) {
+	while (r) {
 		printf(" %s", r->sym->name);
 		r = r->next;
 	}
@@ -232,7 +232,7 @@ void skE_scopePop (skE *env)
 	env->scope = expired->parent;
 
 	node = expired->first_def;
-	while (node != NULL) {
+	while (node) {
 		next = node->next;
 		if (node->kind == KIND_OBJECT || node->kind == KIND_OPERATION) {
 			skO_free(node->data.obj);
@@ -270,14 +270,14 @@ void skE_execList (skE *env, skO *list, int scoping)
 #ifdef SK_O_TAIL
 tail:
 #endif
-	while (head != NULL) {
+	while (head) {
 		tok = head;
 		head = head->next;
 
 		switch (tok->tag) {
 		case SKO_SYMBOL:
 			r = scope_find(env, tok);
-			if (r == NULL) {
+			if (!r) {
 				fprintf(stderr, "PANIC! Not found: %s\n", (tok->data.sym)->name);
 				env->panic = 1;
 				longjmp(env->jmp, 1);
@@ -288,15 +288,15 @@ tail:
 				break;
 			case KIND_OPERATION:
 				#ifdef SK_O_TAIL
-				if (tok->next == NULL) {
+				if (tok->next) {
+					skE_execList(env, skO_clone(r->data.obj), 1);
+				} else {
 					skO_free(tok);
 					tok = skO_clone(r->data.obj);
 					head = tok->data.list;
 					tok->data.list = NULL;
 					skO_free(tok);
 					goto tail;
-				} else {
-					skE_execList(env, skO_clone(r->data.obj), 1);
 				}
 				#else
 				skE_execList(env, skO_clone(r->data.obj), 1);
@@ -306,22 +306,20 @@ tail:
 				#ifdef SK_O_TAIL
 				cont = r->data.native(env);
 
-				if (tok->next == NULL) {
-
-					if (cont != NULL) {
+				if (cont) {
+					if (tok->next) {
+						skE_execList(env, cont, 1);
+					} else {
 						skO_free(tok);
 						head = cont->data.list;
 						cont->data.list = NULL;
 						skO_free(cont);
 						goto tail;
 					}
-				} else {
-					if (cont != NULL)
-						skE_execList(env, cont, 1);
 				}
 				#else
 				cont = r->data.native(env);
-				if (cont != NULL)
+				if (cont)
 					skE_execList(env, cont, 1);
 				#endif
 				break;
@@ -365,7 +363,7 @@ skO *skO_loadParse (char *path)
 	}
 
 	f = fopen(path, "rb");
-	if (f == NULL) {
+	if (!f) {
 		fprintf(stderr, "INTERPRETER ERROR! Could not open file %s.\n", path);
 		exit(EXIT_FAILURE);
 	}
