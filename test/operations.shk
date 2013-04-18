@@ -1,0 +1,26 @@
+-- Copyright (c) 2013, Jeremy Pinat.
+
+------------------------------------------------------------------------------
+--                                                                          --
+--                      TESTS FOR BUILT-IN OPERATIONS                       --
+--                                                                          --
+------------------------------------------------------------------------------
+
+(with) "lib/test.shk"
+
+------------------------------------------------------------------------------
+
+                                  (test/run)
+                                      [
+
+------------------------------------- = --------------------------------------
+                    [ TRUE       TRUE       ] assert_equal
+                    [ 'a         'a         ] assert_equal
+                    [ 1          1          ] assert_equal
+                    [ :a unquote :a unquote ] assert_equal
+                    [ :a         :a         ] assert_equal
+                    [ [a]        [a]        ] assert_equal
+                    [ []         []         ] assert_equal
+                    [ [[a] b]    [[a] b]    ] assert_equal
+
+                                      ]
