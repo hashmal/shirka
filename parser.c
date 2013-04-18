@@ -167,14 +167,32 @@ skO *parse_character (char **next, jmp_buf jmp)
 		case '\\':
 			result = '\\';
 			break;
+		case '"':
+			result = '"';
+			break;
+		case 'a':
+			result = '\a';
+			break;
+		case 'b':
+			result = '\b';
+			break;
+		case 'f':
+			result = '\f';
+			break;
 		case 'n':
 			result = '\n';
+			break;
+		case 'r':
+			result = '\r';
 			break;
 		case 's':
 			result = ' ';
 			break;
 		case 't':
 			result = '\t';
+			break;
+		case 'v':
+			result = '\v';
 			break;
 		default:
 			FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
