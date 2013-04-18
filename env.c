@@ -74,7 +74,7 @@ reserved *scope_find_current (skE *env, skO *sym)
 
 skE *skE_new (void)
 {
-	skE *env = (skE *)malloc(sizeof(skE));
+	skE *env = malloc(sizeof(skE));
 	env->stack = NULL;
 	env->scope = NULL;
 	env->panic = 0;
@@ -99,7 +99,7 @@ void skE_defNative (skE *env, char *name, skE_natOp *native)
 	reserved *slot;
 	skO *obj = skO_symbol_new(name);
 
-	slot              = (reserved *)malloc(sizeof(reserved));
+	slot              = malloc(sizeof(reserved));
 	slot->next        = env->scope->first_def;
 	slot->sym         = obj->data.sym;
 	slot->kind        = KIND_NATIVE;
@@ -120,7 +120,7 @@ void skE_defObject (skE *env, skO *sym, skO *obj)
 		/* Release previously defined object? */
 	}
 
-	slot           = (reserved *)malloc(sizeof(reserved));
+	slot           = malloc(sizeof(reserved));
 	slot->next     = scope_get(env)->first_def;
 	slot->sym      = sym->data.sym;
 	slot->kind     = KIND_OBJECT;
@@ -144,7 +144,7 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 		longjmp(env->jmp, 1);
 	}
 
-	slot           = (reserved *)malloc(sizeof(reserved));
+	slot           = malloc(sizeof(reserved));
 	slot->next     = scope_get(env)->first_def;
 	slot->sym      = sym->data.sym;
 	slot->kind     = KIND_OPERATION;
@@ -194,7 +194,7 @@ void skE_undef (skE *env, skO *sym)
 
 void skE_scopePush (skE *env)
 {
-	context *ct = (context *)malloc(sizeof(context));
+	context *ct = malloc(sizeof(context));
 	ct->parent = env->scope;
 	ct->first_def = NULL;
 	env->scope = ct;
@@ -372,7 +372,7 @@ skO *skO_loadParse (char *path)
 	f_size = ftell(f);
 	fseek(f, 0, SEEK_SET);
 	/* copy source into string */
-	src = (char *)malloc(f_size);
+	src = malloc(f_size);
 	fread(src, f_size, 1, f);
 	src[f_size] = 0;
 	fclose(f);

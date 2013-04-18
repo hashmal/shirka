@@ -335,7 +335,7 @@ SK_INTRINSIC skI_parse (skE *env)
 		node = node->next;
 	}
 
-	str = (char *)malloc(count);
+	str = malloc(count);
 
 	node = list->data.list;
 	while (node) {
