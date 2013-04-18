@@ -366,7 +366,7 @@ skO *skO_loadParse (char *path)
 
 	f = fopen(path, "rb");
 	if (f == NULL) {
-		fprintf(stderr, "INTERPRETER ERROR! Could not open file.\n");
+		fprintf(stderr, "INTERPRETER ERROR! Could not open file %s.\n", path);
 		exit(EXIT_FAILURE);
 	}
 	/* get file size */
