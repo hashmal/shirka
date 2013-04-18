@@ -112,13 +112,11 @@ skO *parse_number (char **next)
 		return NULL;
 
 	while (1) {
-		if (isdigit(*c)) {
-			buffer[i] = *c;
-			i++;
-			c++;
-		} else {
+		if (!isdigit(*c))
 			break;
-		}
+		buffer[i] = *c;
+		i++;
+		c++;
 	}
 
 	if (*c == '.') {
@@ -127,28 +125,24 @@ skO *parse_number (char **next)
 		c++;
 
 		while (1) {
-			if (isdigit(*c)) {
-				buffer[i] = *c;
-				i++;
-				c++;
-			} else {
+			if (!isdigit(*c))
 				break;
-			}
+			buffer[i] = *c;
+			i++;
+			c++;
 		}
 	}
 
 	buffer[i] = 0;
 
-	if (i) {
-		char **dummy = NULL;
-		*next = c;
-		#ifdef SK_PARSER_DEBUG
-		printf("Parsed NUMBER:      %s\n", buffer);
-		#endif
-		return skO_number_new(strtod(buffer, dummy));
-	} else {
+	if (!i)
 		return NULL;
-	}
+	char **dummy = NULL;
+	*next = c;
+	#ifdef SK_PARSER_DEBUG
+	printf("Parsed NUMBER:      %s\n", buffer);
+	#endif
+	return skO_number_new(strtod(buffer, dummy));
 }
 
 skO *parse_character (char **next, jmp_buf jmp)
@@ -195,13 +189,12 @@ skO *parse_qidentifier (char **next)
 
 	c++;
 
-	if (IDENTIFIER_START(*c)) {
-		buffer[i] = *c;
-		i++;
-		c++;
-	} else {
+	if (!IDENTIFIER_START(*c))
 		goto failure;
-	}
+
+	buffer[i] = *c;
+	i++;
+	c++;
 
 	while (1) {
 		if (c[0] == '-' && c[1] == '-')
@@ -233,13 +226,12 @@ skO *parse_identifier (char **next)
 	char buffer[SYMBOL_MAX_LENGTH];
 	short i = 0;
 
-	if (IDENTIFIER_START(*c)) {
-		buffer[i] = *c;
-		i++;
-		c++;
-	} else {
+	if (!IDENTIFIER_START(*c))
 		goto failure;
-	}
+
+	buffer[i] = *c;
+	i++;
+	c++;
 
 	while (1) {
 		if (c[0] == '-' && c[1] == '-')
@@ -389,20 +381,16 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	}
 
 	if (delim) {
-		if (*src == delim[0]) {
-			src++;
-			consume_leading(&src);
-			#ifdef SK_PARSER_DEBUG
-			printf("Parsed %c\n", delim[0]);
-			#endif
-		} else {
+		if (*src != delim[0])
 			return NULL;
-		}
-	} else {
-		if (*src == 0) {
-			ended = 1;
-			exit(EXIT_FAILURE);
-		}
+		src++;
+		consume_leading(&src);
+		#ifdef SK_PARSER_DEBUG
+		printf("Parsed %c\n", delim[0]);
+		#endif
+	} else if (*src == 0) {
+		ended = 1;
+		exit(EXIT_FAILURE);
 	}
 
 	while (!ended) {
