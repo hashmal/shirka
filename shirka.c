@@ -28,7 +28,7 @@ int main (int argc, char const *argv[])
 	ast = skO_loadParse((char *)argv[1]);
 	skE_execList(env, ast, 1);
 
-	if (env->stack != NULL)
+	if (env->stack)
 		printf("WARNING! Stack non empty upon exit.\n");
 
 	if (env->panic) {

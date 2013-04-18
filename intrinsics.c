@@ -11,7 +11,7 @@ void print_list (skO *list)
 {
 	skO *node = list->data.list;
 
-	while (node != NULL) {
+	while (node) {
 		switch (node->tag) {
 		case SKO_QSYMBOL:
 		case SKO_SYMBOL:
@@ -89,7 +89,7 @@ SK_INTRINSIC skI_print (skE *env)
 		}
 		break;
 	default:
-		printf("PANIC! Internal type error.\n");
+		fprintf(stderr, "PANIC! Internal type error.\n");
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
@@ -330,15 +330,15 @@ SK_INTRINSIC skI_parse (skE *env)
 	skO_checkType(list, SKO_LIST);
 
 	node = list->data.list;
-	while (node != NULL) {
+	while (node) {
 		count++;
 		node = node->next;
 	}
 
-	str = (char *)malloc(count);
+	str = malloc(count);
 
 	node = list->data.list;
-	while (node != NULL) {
+	while (node) {
 		str[i] = node->data.character;
 		i++;
 		node = node->next;
@@ -389,7 +389,7 @@ SK_INTRINSIC skI_eql (skE *env)
 	if (l->tag == r->tag) {
 		switch (l->tag) {
 		case SKO_LIST:
-			printf("PANIC! Equality testing not yet implemented for lists.\n");
+			fprintf(stderr, "PANIC! Equality testing not yet implemented for lists.\n");
 			env->panic = 1;
 			longjmp(env->jmp, 1);
 		default:
@@ -415,7 +415,7 @@ SK_INTRINSIC skI_length (skE *env)
 	skO *list = skE_stackPop(env);
 	skO *node = list->data.list;
 
-	while (node != NULL) {
+	while (node) {
 		len++;
 		node = node->next;
 	}
@@ -465,7 +465,7 @@ SK_INTRINSIC skI_with (skE *env)
 	skO_checkType(fname, SKO_LIST);
 	skchar = fname->data.list;
 
-	while (skchar != NULL) {
+	while (skchar) {
 		buffer[i] = skchar->data.character;
 		skchar = skchar->next;
 		i++;
@@ -505,7 +505,7 @@ SK_INTRINSIC skI_type (skE *env)
 		sym = skO_symbol_new("Boolean");
 		break;
 	default:
-		printf("PANIC! Internal type error: %i\n", obj->tag);
+		fprintf(stderr, "PANIC! Internal type error: %i\n", obj->tag);
 		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
