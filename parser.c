@@ -45,10 +45,11 @@ The following macros are used by token extractors as character categories.
 */
 
 #define IDENTIFIER_START(c) (isalpha(c)                                      \
-	|| c == '*' || c == '+' || c == '-' || c == '/' || c == '<'          \
-	|| c == '=' || c == '>' || c == '^' || c == '!' || c == '&'          \
-	|| c == '.' || c == '?' || c == '|' || c == '~' || c == '$'          \
-	|| c == '%')
+	|| c == '!' || c == '#' || c == '$'  || c == '%' || c == '&'         \
+	|| c == '*' || c == '+' || c == ','  || c == '-' || c == '.'         \
+	|| c == '/' || c == ';' || c == '<'  || c == '=' || c == '>'         \
+	|| c == '?' || c == '@' || c == '\\' || c == '^' || c == '|'         \
+	|| c == '~')
 
 #define IDENTIFIER_CONT(c) (IDENTIFIER_START(c) || isdigit(c) || c == '\'')
 
