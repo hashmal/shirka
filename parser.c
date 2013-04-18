@@ -458,23 +458,13 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* Handle regular tokens. */
 
-		obj = parse_string(&src, pe);
-		if (obj != NULL) goto matched;
-
-		obj = parse_number(&src);
-		if (obj != NULL) goto matched;
-
-		obj = parse_qidentifier(&src);
-		if (obj != NULL) goto matched;
-
-		obj = parse_identifier(&src);
-		if (obj != NULL) goto matched;
-
-		obj = parse_character(&src, pe);
-		if (obj != NULL) goto matched;
-
-		obj = skO_parse(&src, pe, "[]");
-		if (obj != NULL) goto matched;
+		if ((obj = parse_string(&src, pe))
+			|| (obj = parse_number(&src))
+			|| (obj = parse_qidentifier(&src))
+			|| (obj = parse_identifier(&src))
+			|| (obj = parse_character(&src, pe))
+			|| (obj = skO_parse(&src, pe, "[]")))
+			goto matched;
 
 		/* If everything failed... */
 
