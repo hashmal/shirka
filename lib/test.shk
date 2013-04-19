@@ -27,6 +27,26 @@
     ]
   ]
 
+  (=> assert_different) [
+    -> $assert/op
+    (try)    [ $assert/op !  ]
+    (rescue) [ abort ]
+
+    length? 2 = not (!?) [abort]
+
+    -- uncons >< uncons >< << ><
+    uncons -> result
+    uncons -> expected
+    <<
+
+    result expected = (!?) [
+      "Difference failed:" puts
+      "  Expected: " print expected puts
+      "    Result: " print result   puts
+      "" puts
+    ]
+  ]
+
   (=> assert_error) [
     -> $assert/op
     (try) [ $assert/op ! ]

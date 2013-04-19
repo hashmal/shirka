@@ -23,4 +23,162 @@
                     [ []         []         ] assert_equal
                     [ [[a] b]    [[a] b]    ] assert_equal
 
+                  [ TRUE       'a         ] assert_different
+                  [ 'a         1          ] assert_different
+                  [ 1          :a unquote ] assert_different
+                  [ :a unquote :a         ] assert_different
+                  [ :a         [a]        ] assert_different
+                  [ [a]        []         ] assert_different
+                  [ []         [[a] b]    ] assert_different
+                  [ [[a] b]    TRUE       ] assert_different
+
+------------------------------------- + --------------------------------------
+                  [ 1          1          + 2 ] assert_equal
+                  [ 1          :a         +   ] assert_error
+                  [ 1          :a unquote +   ] assert_error
+                  [ 1          'a         +   ] assert_error
+                  [ 1          [a]        +   ] assert_error
+                  [ 1          TRUE       +   ] assert_error
+                  [ :a         1          +   ] assert_error
+                  [ :a unquote 1          +   ] assert_error
+                  [ 'a         1          +   ] assert_error
+                  [ [a]        1          +   ] assert_error
+                  [ TRUE       1          +   ] assert_error
+
+------------------------------------- - --------------------------------------
+                  [ 3          2          - 1 ] assert_equal
+                  [ 1          :a         -   ] assert_error
+                  [ 1          :a unquote -   ] assert_error
+                  [ 1          'a         -   ] assert_error
+                  [ 1          [a]        -   ] assert_error
+                  [ 1          TRUE       -   ] assert_error
+                  [ :a         1          -   ] assert_error
+                  [ :a unquote 1          -   ] assert_error
+                  [ 'a         1          -   ] assert_error
+                  [ [a]        1          -   ] assert_error
+                  [ TRUE       1          -   ] assert_error
+
+------------------------------------- * --------------------------------------
+                  [ 2          3          * 6 ] assert_equal
+                  [ 1          :a         *   ] assert_error
+                  [ 1          :a unquote *   ] assert_error
+                  [ 1          'a         *   ] assert_error
+                  [ 1          [a]        *   ] assert_error
+                  [ 1          TRUE       *   ] assert_error
+                  [ :a         1          *   ] assert_error
+                  [ :a unquote 1          *   ] assert_error
+                  [ 'a         1          *   ] assert_error
+                  [ [a]        1          *   ] assert_error
+                  [ TRUE       1          *   ] assert_error
+
+------------------------------------- / --------------------------------------
+                  [ 6          2          / 3 ] assert_equal
+                  [ 1          :a         /   ] assert_error
+                  [ 1          :a unquote /   ] assert_error
+                  [ 1          'a         /   ] assert_error
+                  [ 1          [a]        /   ] assert_error
+                  [ 1          TRUE       /   ] assert_error
+                  [ :a         1          /   ] assert_error
+                  [ :a unquote 1          /   ] assert_error
+                  [ 'a         1          /   ] assert_error
+                  [ [a]        1          /   ] assert_error
+                  [ TRUE       1          /   ] assert_error
+
+------------------------------------- ^ --------------------------------------
+                  [ 2          3          ^ 8 ] assert_equal
+                  [ 1          :a         ^   ] assert_error
+                  [ 1          :a unquote ^   ] assert_error
+                  [ 1          'a         ^   ] assert_error
+                  [ 1          [a]        ^   ] assert_error
+                  [ 1          TRUE       ^   ] assert_error
+                  [ :a         1          ^   ] assert_error
+                  [ :a unquote 1          ^   ] assert_error
+                  [ 'a         1          ^   ] assert_error
+                  [ [a]        1          ^   ] assert_error
+                  [ TRUE       1          ^   ] assert_error
+
+
+------------------------------------- % --------------------------------------
+                  [ 6          2          % 0 ] assert_equal
+                  [ 10         3          % 1 ] assert_equal
+                  [ 1          :a         %   ] assert_error
+                  [ 1          :a unquote %   ] assert_error
+                  [ 1          'a         %   ] assert_error
+                  [ 1          [a]        %   ] assert_error
+                  [ 1          TRUE       %   ] assert_error
+                  [ :a         1          %   ] assert_error
+                  [ :a unquote 1          %   ] assert_error
+                  [ 'a         1          %   ] assert_error
+                  [ [a]        1          %   ] assert_error
+                  [ TRUE       1          %   ] assert_error
+
+------------------------------------ abs -------------------------------------
+                      [ 2           abs 2 ] assert_equal
+                      [ -2          abs 2 ] assert_equal
+                      [ :a          abs   ] assert_error
+                      [ :a unquote  abs   ] assert_error
+                      [ 'a          abs   ] assert_error
+                      [ [a]         abs   ] assert_error
+                      [ TRUE        abs   ] assert_error
+
+------------------------------------- > --------------------------------------
+                [ 2          1          > TRUE  ] assert_equal
+                [ 1          2          > FALSE ] assert_equal
+                [ 1          1          > FALSE ] assert_equal
+                [ 1          :a         >       ] assert_error
+                [ 1          :a unquote >       ] assert_error
+                [ 1          'a         >       ] assert_error
+                [ 1          [a]        >       ] assert_error
+                [ 1          TRUE       >       ] assert_error
+                [ :a         1          >       ] assert_error
+                [ :a unquote 1          >       ] assert_error
+                [ 'a         1          >       ] assert_error
+                [ [a]        1          >       ] assert_error
+                [ TRUE       1          >       ] assert_error
+
+------------------------------------- < --------------------------------------
+                [ 2          1          < FALSE ] assert_equal
+                [ 1          2          < TRUE  ] assert_equal
+                [ 1          1          < FALSE ] assert_equal
+                [ 1          :a         <       ] assert_error
+                [ 1          :a unquote <       ] assert_error
+                [ 1          'a         <       ] assert_error
+                [ 1          [a]        <       ] assert_error
+                [ 1          TRUE       <       ] assert_error
+                [ :a         1          <       ] assert_error
+                [ :a unquote 1          <       ] assert_error
+                [ 'a         1          <       ] assert_error
+                [ [a]        1          <       ] assert_error
+                [ TRUE       1          <       ] assert_error
+
+------------------------------------- >= -------------------------------------
+               [ 2          1          >= TRUE  ] assert_equal
+               [ 1          2          >= FALSE ] assert_equal
+               [ 1          1          >= TRUE  ] assert_equal
+               [ 1          :a         >=       ] assert_error
+               [ 1          :a unquote >=       ] assert_error
+               [ 1          'a         >=       ] assert_error
+               [ 1          [a]        >=       ] assert_error
+               [ 1          TRUE       >=       ] assert_error
+               [ :a         1          >=       ] assert_error
+               [ :a unquote 1          >=       ] assert_error
+               [ 'a         1          >=       ] assert_error
+               [ [a]        1          >=       ] assert_error
+               [ TRUE       1          >=       ] assert_error
+
+------------------------------------- <= -------------------------------------
+               [ 2          1          <= FALSE ] assert_equal
+               [ 1          2          <= TRUE  ] assert_equal
+               [ 1          1          <= TRUE  ] assert_equal
+               [ 1          :a         <=       ] assert_error
+               [ 1          :a unquote <=       ] assert_error
+               [ 1          'a         <=       ] assert_error
+               [ 1          [a]        <=       ] assert_error
+               [ 1          TRUE       <=       ] assert_error
+               [ :a         1          <=       ] assert_error
+               [ :a unquote 1          <=       ] assert_error
+               [ 'a         1          <=       ] assert_error
+               [ [a]        1          <=       ] assert_error
+               [ TRUE       1          <=       ] assert_error
+
                                       ]
