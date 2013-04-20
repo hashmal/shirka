@@ -224,3 +224,38 @@
 -- Expected: .. List Object
 -- Insert an object at the end of a list.
   [ [] >< cons ++ ]
+
+------------------------------------------------------------------------------
+(=> included?)
+  [ -> element
+    length? 0 =
+    (if)
+      [ [ FALSE ]
+        [ >> (FALSE fold) [ element = or ] ] ] ]
+
+------------------------------------------------------------------------------
+(=> take)
+  [ -> nb
+    []
+    (nb times)
+      [ >< uncons -> el >< <- el cons ] ]
+
+------------------------------------------------------------------------------
+(=> split)
+  [ -> $split/val
+    [[]] ><
+
+    (each)
+      [ -> v
+        v $split/val =
+        (if)
+          [ [ [] cons ]
+            [ uncons v cons cons ] ] ]
+    reverse (map) [ reverse ] ]
+
+------------------------------------------------------------------------------
+(=> snd-fst)
+  [ uncons -> fst
+    uncons -> snd
+    length? 0 = not (!?) [ fail ]
+    << snd fst ]
