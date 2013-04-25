@@ -53,6 +53,9 @@ The following macros are used by token extractors as character categories.
 
 #define IDENTIFIER_CONT(c) (IDENTIFIER_START(c) || isdigit(c) || c == '\'')
 
+#define SEPARATOR(c) (isspace(c)                                             \
+	|| c == '[' || c == ']' || c == '(' || c == ')' || c == 0)
+
 /*//////////////////////////////////////////////////////////////////////////*/
 
 /*
@@ -137,14 +140,16 @@ skO *parse_number (char **next)
 
 	buffer[i] = 0;
 
-	if (!i)
+	if (SEPARATOR(*c) && i) {
+		char **dummy = NULL;
+		*next = c;
+		#ifdef SK_PARSER_DEBUG
+		printf("Parsed NUMBER:      %s\n", buffer);
+		#endif
+		return skO_number_new(strtod(buffer, dummy));
+	} else {
 		return NULL;
-	char **dummy = NULL;
-	*next = c;
-	#ifdef SK_PARSER_DEBUG
-	printf("Parsed NUMBER:      %s\n", buffer);
-	#endif
-	return skO_number_new(strtod(buffer, dummy));
+	}
 }
 
 skO *parse_character_literal (char **next, jmp_buf jmp)
