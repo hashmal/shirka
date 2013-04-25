@@ -18,7 +18,6 @@ int main (int argc, char const *argv[])
 
 	if (argc != 2) {
 		puts("Wrong number of command line arguments.");
-		env->panic = 1;
 		exit(EXIT_FAILURE);
 	}
 
@@ -31,11 +30,5 @@ int main (int argc, char const *argv[])
 	if (env->stack)
 		printf("WARNING! Stack non empty upon exit.\n");
 
-	if (env->panic) {
-		skE_free(env);
-		exit(EXIT_FAILURE);
-	} else {
-		skE_free(env);
-		return 0;
-	}
+	return 0;
 }

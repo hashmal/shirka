@@ -12,7 +12,6 @@ skO *skE_stackPop (skE *env)
 
 	if (!env->stack) {
 		fprintf(stderr, "PANIC! Tried to pop object but stack is empty.\n");
-		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 	obj = env->stack;
@@ -77,7 +76,6 @@ skE *skE_new (void)
 	skE *env = malloc(sizeof(skE));
 	env->stack = NULL;
 	env->scope = NULL;
-	env->panic = 0;
 
 	return env;
 }
@@ -140,7 +138,6 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 
 	if (scope_find_current(env, sym)) {
 		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
-		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
@@ -166,13 +163,11 @@ void skE_undef (skE *env, skO *sym)
 
 	if (!r) {
 		fprintf(stderr, "PANIC! Reserved object not found in current scope.\n");
-		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
 	if (r->kind != KIND_OBJECT) {
 		fprintf(stderr, "PANIC! Expected object, got native or operation.\n");
-		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
@@ -279,7 +274,6 @@ tail:
 			r = scope_find(env, tok);
 			if (!r) {
 				fprintf(stderr, "PANIC! Not found: %s\n", (tok->data.sym)->name);
-				env->panic = 1;
 				longjmp(env->jmp, 1);
 			}
 			switch (r->kind) {
@@ -339,7 +333,6 @@ tail:
 			break;
 		default:
 			fprintf(stderr, "PANIC! Internal type error.\n");
-			env->panic = 1;
 			longjmp(env->jmp, 1);
 		}
 	}

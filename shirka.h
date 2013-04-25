@@ -71,7 +71,6 @@ struct skO {
 struct skE {
 	skO     *stack;
 	context *scope;
-	int     panic;
 	jmp_buf jmp;
 };
 

@@ -90,7 +90,6 @@ SK_INTRINSIC skI_print (skE *env)
 		break;
 	default:
 		fprintf(stderr, "PANIC! Internal type error.\n");
-		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
@@ -540,7 +539,6 @@ SK_INTRINSIC skI_type (skE *env)
 		break;
 	default:
 		fprintf(stderr, "PANIC! Internal type error: %i\n", obj->tag);
-		env->panic = 1;
 		longjmp(env->jmp, 1);
 	}
 
