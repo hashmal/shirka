@@ -490,7 +490,7 @@ SK_INTRINSIC skI_uncons (skE *env)
 SK_INTRINSIC skI_with (skE *env)
 {
 	char buffer[256];
-	int i = 0;
+	size_t i = 0;
 	skO *ast;
 	skO *skchar;
 	skO *fname = skE_stackPop(env);
@@ -499,6 +499,11 @@ SK_INTRINSIC skI_with (skE *env)
 	skchar = fname->data.list;
 
 	while (skchar) {
+		if (skchar->tag != SKO_CHARACTER || i >= sizeof(buffer) - 1) {
+			fprintf(stderr, "PANIC! Invalid or too long file path.\n");
+			skO_free(fname);
+			longjmp(env->jmp, 1);
+		}
 		buffer[i] = skchar->data.character;
 		skchar = skchar->next;
 		i++;

@@ -11,6 +11,9 @@ symbol *symbol_id_from_string (char *str)
 {
 	symbol *sym = symbol_list;
 
+	if (strlen(str) >= SYMBOL_MAX_LENGTH)
+		FATAL("PANIC! Symbol too long.\n");
+
 	while (sym) {
 		if (strcmp(str, sym->name) == 0) {
 			goto symbol_found;

@@ -44,16 +44,16 @@ To enable the printing of debug information, define the constant
 The following macros are used by token extractors as character categories.
 */
 
-#define IDENTIFIER_START(c) (isalpha(c) || c == '_'                          \
+#define IDENTIFIER_START(c) (isalpha((unsigned char)(c)) || c == '_'                          \
 	|| c == '!' || c == '#' || c == '$'  || c == '%' || c == '&'         \
 	|| c == '*' || c == '+' || c == ','  || c == '-' || c == '.'         \
 	|| c == '/' || c == ';' || c == '<'  || c == '=' || c == '>'         \
 	|| c == '?' || c == '@' || c == '\\' || c == '^' || c == '|'         \
 	|| c == '~')
 
-#define IDENTIFIER_CONT(c) (IDENTIFIER_START(c) || isdigit(c) || c == '\'')
+#define IDENTIFIER_CONT(c) (IDENTIFIER_START(c) || isdigit((unsigned char)(c)) || c == '\'')
 
-#define SEPARATOR(c) (isspace(c)                                             \
+#define SEPARATOR(c) (isspace((unsigned char)(c))                                             \
 	|| c == '[' || c == ']' || c == '(' || c == ')' || c == 0)
 
 /*//////////////////////////////////////////////////////////////////////////*/
@@ -66,14 +66,14 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim);
 /*
 Token extractors
 */
-skO *parse_number            (char **next);
+skO *parse_number            (char **next, jmp_buf jmp);
 skO *parse_character         (char **next, jmp_buf jmp);
 skO *parse_character_literal (char **next, jmp_buf jmp);
-skO *parse_qidentifier       (char **next);
-skO *parse_identifier        (char **next);
-skO *parse_op_def            (char **next);
-skO *parse_obj_reserve       (char **next);
-skO *parse_obj_restore       (char **next);
+skO *parse_qidentifier       (char **next, jmp_buf jmp);
+skO *parse_identifier        (char **next, jmp_buf jmp);
+skO *parse_op_def            (char **next, jmp_buf jmp);
+skO *parse_obj_reserve       (char **next, jmp_buf jmp);
+skO *parse_obj_restore       (char **next, jmp_buf jmp);
 skO *parse_string_literal    (char **next, jmp_buf jmp);
 
 /*
@@ -89,7 +89,7 @@ void consume_leading (char **next)
 	char *c = *next;
 
 	while (*c != 0) {
-		if (isspace(*c)) {
+		if (isspace((unsigned char)*c)) {
 			c++;
 		} else if (c[0] == '-' && c[1] == '-') {
 			while (*c != '\n' && *c != 0)
@@ -101,13 +101,17 @@ void consume_leading (char **next)
 	*next = c;
 }
 
-skO *parse_number (char **next)
+skO *parse_number (char **next, jmp_buf jmp)
 {
 	char *c = *next;
 	char buffer[SYMBOL_MAX_LENGTH];
-	short i = 0;
+	size_t i = 0;
 
 	if (*c == '-' && c[1] >= '0' && c[1] <= '9') {
+		if (i >= sizeof(buffer) - 1) {
+			fprintf(stderr, "PANIC! Token too long.\n");
+			longjmp(jmp, 1);
+		}
 		buffer[i] = *c;
 		i++;
 		c++;
@@ -117,21 +121,33 @@ skO *parse_number (char **next)
 		return NULL;
 
 	while (1) {
-		if (!isdigit(*c))
+		if (!isdigit((unsigned char)*c))
 			break;
+		if (i >= sizeof(buffer) - 1) {
+			fprintf(stderr, "PANIC! Token too long.\n");
+			longjmp(jmp, 1);
+		}
 		buffer[i] = *c;
 		i++;
 		c++;
 	}
 
 	if (*c == '.') {
+		if (i >= sizeof(buffer) - 1) {
+			fprintf(stderr, "PANIC! Token too long.\n");
+			longjmp(jmp, 1);
+		}
 		buffer[i] = *c;
 		i++;
 		c++;
 
 		while (1) {
-			if (!isdigit(*c))
+			if (!isdigit((unsigned char)*c))
 				break;
+			if (i >= sizeof(buffer) - 1) {
+				fprintf(stderr, "PANIC! Token too long.\n");
+				longjmp(jmp, 1);
+			}
 			buffer[i] = *c;
 			i++;
 			c++;
@@ -167,6 +183,11 @@ skO *parse_character (char **next, jmp_buf jmp)
 	char *c = *next;
 	char result = 0;
 
+	if (*c == 0) {
+		fprintf(stderr, "PANIC! Incomplete character literal.\n");
+		longjmp(jmp, 1);
+	}
+
 	if (*c == '\\') {
 		c++;
 		switch (*c) {
@@ -201,7 +222,7 @@ skO *parse_character (char **next, jmp_buf jmp)
 			result = '\v';
 			break;
 		default:
-			FATAL("PANIC! Unknown escape sequence \\%c.\n", *c);
+			fprintf(stderr, "PANIC! Unknown escape sequence \\%c.\n", *c);
 			longjmp(jmp, 1);
 		}
 		#ifdef SK_PARSER_DEBUG
@@ -219,11 +240,11 @@ skO *parse_character (char **next, jmp_buf jmp)
 	return skO_character_new(result);
 }
 
-skO *parse_qidentifier (char **next)
+skO *parse_qidentifier (char **next, jmp_buf jmp)
 {
 	char *c = *next;
 	char buffer[SYMBOL_MAX_LENGTH];
-	short i = 0;
+	size_t i = 0;
 
 	if (*c != ':')
 		goto failure;
@@ -242,15 +263,19 @@ skO *parse_qidentifier (char **next)
 			break;
 
 		if (IDENTIFIER_CONT(*c)) {
+			if (i >= sizeof(buffer) - 1) {
+				fprintf(stderr, "PANIC! Token too long.\n");
+				longjmp(jmp, 1);
+			}
 			buffer[i] = *c;
 			i++;
 			c++;
 		} else {
-			buffer[i] = 0;
 			break;
 		}
 	}
 
+	buffer[i] = 0;
 	*next = c;
 	#ifdef SK_PARSER_DEBUG
 	printf("Parsed QIDENTIFIER: %s\n", buffer);
@@ -261,11 +286,11 @@ failure:
 	return NULL;
 }
 
-skO *parse_identifier (char **next)
+skO *parse_identifier (char **next, jmp_buf jmp)
 {
 	char *c = *next;
 	char buffer[SYMBOL_MAX_LENGTH];
-	short i = 0;
+	size_t i = 0;
 
 	if (!IDENTIFIER_START(*c))
 		goto failure;
@@ -279,15 +304,19 @@ skO *parse_identifier (char **next)
 			break;
 
 		if (IDENTIFIER_CONT(*c)) {
+			if (i >= sizeof(buffer) - 1) {
+				fprintf(stderr, "PANIC! Token too long.\n");
+				longjmp(jmp, 1);
+			}
 			buffer[i] = *c;
 			i++;
 			c++;
 		} else {
-			buffer[i] = 0;
 			break;
 		}
 	}
 
+	buffer[i] = 0;
 	*next = c;
 	#ifdef SK_PARSER_DEBUG
 	printf("Parsed IDENTIFIER:  %s\n", buffer);
@@ -298,7 +327,7 @@ failure:
 	return NULL;
 }
 
-skO *parse_op_def (char **next)
+skO *parse_op_def (char **next, jmp_buf jmp)
 {
 	char *src = *next;
 	skO *sym;
@@ -307,7 +336,7 @@ skO *parse_op_def (char **next)
 		src++;
 		src++;
 		consume_leading(&src);
-		sym = parse_identifier(&src);
+		sym = parse_identifier(&src, jmp);
 		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
@@ -321,7 +350,7 @@ skO *parse_op_def (char **next)
 	return NULL;
 }
 
-skO *parse_obj_reserve (char **next)
+skO *parse_obj_reserve (char **next, jmp_buf jmp)
 {
 	char *src = *next;
 	skO *sym;
@@ -330,7 +359,7 @@ skO *parse_obj_reserve (char **next)
 		src++;
 		src++;
 		consume_leading(&src);
-		sym = parse_identifier(&src);
+		sym = parse_identifier(&src, jmp);
 		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
@@ -344,7 +373,7 @@ skO *parse_obj_reserve (char **next)
 	return NULL;
 }
 
-skO *parse_obj_restore (char **next)
+skO *parse_obj_restore (char **next, jmp_buf jmp)
 {
 	char *src = *next;
 	skO *sym;
@@ -353,7 +382,7 @@ skO *parse_obj_restore (char **next)
 		src++;
 		src++;
 		consume_leading(&src);
-		sym = parse_identifier(&src);
+		sym = parse_identifier(&src, jmp);
 		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
@@ -370,6 +399,7 @@ skO *parse_obj_restore (char **next)
 skO *parse_string_literal (char **next, jmp_buf jmp)
 {
 	skO *list;
+	jmp_buf string_error;
 
 	if (**next != '"')
 		return NULL;
@@ -377,8 +407,17 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 	++*next;
 	list = skO_list_new();
 
-	while (**next != '"')
-		sk_list_append(list, parse_character(next, jmp));
+	if (setjmp(string_error)) {
+		skO_free(list);
+		longjmp(jmp, 1);
+	}
+	while (**next != '"') {
+		if (**next == 0) {
+			fprintf(stderr, "PANIC! Unterminated string.\n");
+			longjmp(string_error, 1);
+		}
+		sk_list_append(list, parse_character(next, string_error));
+	}
 	++*next;
 
 	#ifdef SK_PARSER_DEBUG
@@ -391,7 +430,8 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 {
 	skO     *obj;                       /* parsed token (or NULL)       */
 	skO     *list     = skO_list_new(); /* used to store parsed objects */
-	skO     *prefixed = NULL;           /* store "prefix sugar" tokens  */
+	/* Preserve ownership of pending prefix tokens across longjmp. */
+	skO     *volatile prefixed = NULL;
 	char    *src      = *next;
 	jmp_buf pe;
 	int     ended     = 0;
@@ -400,14 +440,16 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 	if (setjmp(pe)) {
 		if (prefixed)
-			free(prefixed);
+			skO_free(prefixed);
 		skO_free(list);
-		printf("parse jmp\n");
+		longjmp(jmp, 1);
 	}
 
 	if (delim) {
-		if (*src != delim[0])
+		if (*src != delim[0]) {
+			skO_free(list);
 			return NULL;
+		}
 		src++;
 		consume_leading(&src);
 		#ifdef SK_PARSER_DEBUG
@@ -415,13 +457,16 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		#endif
 	} else if (*src == 0) {
 		ended = 1;
-		exit(EXIT_FAILURE);
 	}
 
 	while (!ended) {
 		consume_leading(&src);
 
 		if (*src == 0) {
+			if (delim) {
+				fprintf(stderr, "PANIC! Missing closing %c.\n", delim[1]);
+				longjmp(pe, 1);
+			}
 			ended = 1;
 			*next = src;
 			break;
@@ -448,21 +493,21 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		/* Handle "reserving operations" syntactic sugar. */
 
-		obj = parse_op_def(&src);
+		obj = parse_op_def(&src, pe);
 		if (obj) {
 			sk_list_append(list, obj);
 			obj = skO_symbol_new("$=>");
 			goto matched;
 		}
 
-		obj = parse_obj_reserve(&src);
+		obj = parse_obj_reserve(&src, pe);
 		if (obj) {
 			sk_list_append(list, obj);
 			obj = skO_symbol_new("$->");
 			goto matched;
 		}
 
-		obj = parse_obj_restore(&src);
+		obj = parse_obj_restore(&src, pe);
 		if (obj) {
 			sk_list_append(list, obj);
 			obj = skO_symbol_new("$<-");
@@ -472,9 +517,9 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		/* Handle regular tokens. */
 
 		if ((obj = parse_string_literal(&src, pe))
-			|| (obj = parse_number(&src))
-			|| (obj = parse_qidentifier(&src))
-			|| (obj = parse_identifier(&src))
+			|| (obj = parse_number(&src, pe))
+			|| (obj = parse_qidentifier(&src, pe))
+			|| (obj = parse_identifier(&src, pe))
 			|| (obj = parse_character_literal(&src, pe))
 			|| (obj = skO_parse(&src, pe, "[]")))
 			goto matched;
@@ -482,7 +527,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		/* If everything failed... */
 
 		fprintf(stderr, "PANIC! Parsing error: %s\n", src);
-		longjmp(jmp, 1);
+		longjmp(pe, 1);
 
 	matched:
 		sk_list_append(list, obj);
