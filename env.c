@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "shirka.h"
 
 void load_intrinsics (skE *env);
@@ -344,16 +345,12 @@ tail:
 skO *skO_loadParse (char *path)
 {
 	FILE   *f;
-	size_t f_size;
+	long   file_size_result;
+	size_t source_length;
 	char   *src;
 	char   *cursor;
 	skO    *ast;
 	jmp_buf jmp;
-
-	if (setjmp(jmp)) {
-		fprintf(stderr, "Syntax error in file %s\n", path);
-		exit(EXIT_FAILURE);
-	}
 
 	f = fopen(path, "rb");
 	if (!f) {
@@ -361,14 +358,31 @@ skO *skO_loadParse (char *path)
 		exit(EXIT_FAILURE);
 	}
 	/* get file size */
-	fseek(f, 0, SEEK_END);
-	f_size = ftell(f);
-	fseek(f, 0, SEEK_SET);
+	if (fseek(f, 0, SEEK_END) != 0)
+		goto read_error;
+	file_size_result = ftell(f);
+	if (file_size_result < 0 || (uintmax_t)file_size_result >= (uintmax_t)SIZE_MAX)
+		goto read_error;
+	/* ftell returns a signed result; convert only after checking it. */
+	source_length = (size_t)file_size_result;
+	if (fseek(f, 0, SEEK_SET) != 0)
+		goto read_error;
 	/* copy source into string */
-	src = malloc(f_size);
-	fread(src, f_size, 1, f);
-	src[f_size] = 0;
+	src = malloc(source_length + 1);
+	if (!src)
+		goto read_error;
+	if (fread(src, 1, source_length, f) != source_length || ferror(f)) {
+		free(src);
+		goto read_error;
+	}
+	src[source_length] = 0;
 	fclose(f);
+
+	if (setjmp(jmp)) {
+		free(src);
+		fprintf(stderr, "Syntax error in file %s\n", path);
+		exit(EXIT_FAILURE);
+	}
 
 	cursor = src;
 	ast = skO_parse(&cursor, jmp, NULL);
@@ -376,6 +390,11 @@ skO *skO_loadParse (char *path)
 	free(src);
 
 	return ast;
+
+read_error:
+	fclose(f);
+	fprintf(stderr, "INTERPRETER ERROR! Could not read file %s.\n", path);
+	exit(EXIT_FAILURE);
 }
 
 #include "intrinsics.c"
