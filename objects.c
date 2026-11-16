@@ -188,9 +188,9 @@ const char *QSYMBOL_AS_STRING   = "QuotedSymbol";
 const char *SYMBOL_AS_STRING    = "Symbol";
 const char *LIST_AS_STRING      = "List";
 
-const char *tystr (size_t i)
+const char *skO_typeName (skO_t type)
 {
-	switch (i) {
+	switch (type) {
 	case SKO_NUMBER:    return NUMBER_AS_STRING;
 	case SKO_BOOLEAN:   return BOOLEAN_AS_STRING;
 	case SKO_CHARACTER: return CHARACTER_AS_STRING;
@@ -209,6 +209,6 @@ void skO_checkType(skO *obj, skO_t type)
 		return;
 
 	fprintf(stderr, "INTERPRETER ERROR! Expected `%s' but got `%s'.\n",
-		tystr(type), tystr(obj->tag));
+		skO_typeName(type), skO_typeName(obj->tag));
 	exit(EXIT_FAILURE);
 }

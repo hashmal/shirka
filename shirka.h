@@ -138,6 +138,9 @@ void skO_free (skO *obj);
  */
 void skO_checkType (skO *obj, skO_t type);
 
+/* Return the printable name of an object type. */
+const char *skO_typeName (skO_t type);
+
 /*
  * Insert `obj' after the last member of `list'. Can also be used to join two
  * lists.
@@ -164,6 +167,14 @@ void skE_undef        (skE *env, skO *sym);
 /* Go in and out of scope. */
 void skE_scopePush    (skE *env);
 void skE_scopePop     (skE *env);
+
+/* Report a runtime error and jump to the environment's error handler. */
+void skE_error        (skE *env, const char *format, ...);
+void skE_checkType    (skE *env, skO *obj, skO_t type);
+
+/* Inspect without removing an object. Depth zero is the top of the stack.
+ * The returned object remains owned by the stack. */
+skO *skE_stackPeek    (skE *env, size_t depth);
 
 /* Push and pop objects to/from the stack. */
 void skE_stackPush    (skE *env, skO *obj);

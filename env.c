@@ -3,19 +3,48 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include "shirka.h"
 
 void load_intrinsics (skE *env);
 
+void skE_error (skE *env, const char *format, ...)
+{
+	va_list args;
+
+	va_start(args, format);
+	fprintf(stderr, "PANIC! ");
+	vfprintf(stderr, format, args);
+	fprintf(stderr, "\n");
+	va_end(args);
+	longjmp(env->jmp, 1);
+}
+
+void skE_checkType (skE *env, skO *obj, skO_t type)
+{
+	if (obj->tag != type)
+		skE_error(env, "Expected `%s' but got `%s'.",
+			skO_typeName(type), skO_typeName(obj->tag));
+}
+
+skO *skE_stackPeek (skE *env, size_t depth)
+{
+	skO *obj = env->stack;
+
+	while (obj && depth) {
+		obj = obj->next;
+		depth--;
+	}
+	if (!obj)
+		skE_error(env, "Stack underflow.");
+
+	return obj;
+}
+
 skO *skE_stackPop (skE *env)
 {
-	skO *obj;
+	skO *obj = skE_stackPeek(env, 0);
 
-	if (!env->stack) {
-		fprintf(stderr, "PANIC! Tried to pop object but stack is empty.\n");
-		longjmp(env->jmp, 1);
-	}
-	obj = env->stack;
 	env->stack = obj->next;
 	obj->next = NULL;
 	return obj;
@@ -113,7 +142,7 @@ void skE_defObject (skE *env, skO *sym, skO *obj)
 {
 	reserved *slot;
 
-	skO_checkType(sym, SKO_QSYMBOL);
+	skE_checkType(env, sym, SKO_QSYMBOL);
 
 	if (scope_find_current(env, sym)) {
 		/* Release previously defined object? */
@@ -134,8 +163,8 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 {
 	reserved *slot;
 
-	skO_checkType(sym, SKO_QSYMBOL);
-	skO_checkType(obj, SKO_LIST);
+	skE_checkType(env, sym, SKO_QSYMBOL);
+	skE_checkType(env, obj, SKO_LIST);
 
 	if (scope_find_current(env, sym)) {
 		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
@@ -158,7 +187,7 @@ void skE_undef (skE *env, skO *sym)
 	reserved *r;
 	reserved *node = scope_get(env)->first_def;
 
-	skO_checkType(sym, SKO_QSYMBOL);
+	skE_checkType(env, sym, SKO_QSYMBOL);
 
 	r = scope_find_current(env, sym);
 

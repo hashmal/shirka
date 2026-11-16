@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdint.h>
 #include "shirka.h"
 
 #define SK_INTRINSIC skO *
@@ -36,9 +37,13 @@ void print_list (skO *list)
 
 SK_INTRINSIC skI_defOperation (skE *env)
 {
-	skO *sym = skE_stackPop(env);
-	skO *obj = skE_stackPop(env);
+	skO *sym = skE_stackPeek(env, 0);
+	skO *obj = skE_stackPeek(env, 1);
 
+	skE_checkType(env, sym, SKO_QSYMBOL);
+	skE_checkType(env, obj, SKO_LIST);
+	skE_stackPop(env);
+	skE_stackPop(env);
 	skE_defOperation(env, sym, obj);
 
 	return NULL;
@@ -46,9 +51,12 @@ SK_INTRINSIC skI_defOperation (skE *env)
 
 SK_INTRINSIC skI_defObject (skE *env)
 {
-	skO *sym = skE_stackPop(env);
-	skO *obj = skE_stackPop(env);
+	skO *sym = skE_stackPeek(env, 0);
+	skO *obj = skE_stackPeek(env, 1);
 
+	skE_checkType(env, sym, SKO_QSYMBOL);
+	skE_stackPop(env);
+	skE_stackPop(env);
 	skE_defObject(env, sym, obj);
 
 	return NULL;
@@ -56,8 +64,10 @@ SK_INTRINSIC skI_defObject (skE *env)
 
 SK_INTRINSIC skI_undef (skE *env)
 {
-	skO *sym = skE_stackPop(env);
+	skO *sym = skE_stackPeek(env, 0);
 
+	skE_checkType(env, sym, SKO_QSYMBOL);
+	skE_stackPop(env);
 	skE_undef(env, sym);
 
 	return NULL;
@@ -122,11 +132,13 @@ SK_INTRINSIC skI_false (skE *env)
 
 SK_INTRINSIC skI_add (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.number = l->data.number + r->data.number;
 
@@ -138,11 +150,13 @@ SK_INTRINSIC skI_add (skE *env)
 
 SK_INTRINSIC skI_sub (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.number = l->data.number - r->data.number;
 
@@ -154,11 +168,13 @@ SK_INTRINSIC skI_sub (skE *env)
 
 SK_INTRINSIC skI_mul (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.number = l->data.number * r->data.number;
 
@@ -170,11 +186,13 @@ SK_INTRINSIC skI_mul (skE *env)
 
 SK_INTRINSIC skI_div (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.number = l->data.number / r->data.number;
 
@@ -186,11 +204,13 @@ SK_INTRINSIC skI_div (skE *env)
 
 SK_INTRINSIC skI_pow (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.number = pow(l->data.number, r->data.number);
 
@@ -202,11 +222,13 @@ SK_INTRINSIC skI_pow (skE *env)
 
 SK_INTRINSIC skI_mod (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.number = fmod(l->data.number, r->data.number);
 
@@ -218,9 +240,10 @@ SK_INTRINSIC skI_mod (skE *env)
 
 SK_INTRINSIC skI_abs (skE *env)
 {
-	skO *l = skE_stackPop(env);
+	skO *l = skE_stackPeek(env, 0);
 
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
 
 	l->data.number = fabs(l->data.number);
 
@@ -231,11 +254,13 @@ SK_INTRINSIC skI_abs (skE *env)
 
 SK_INTRINSIC skI_gt (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.boolean = l->data.number > r->data.number;
 	l->tag = SKO_BOOLEAN;
@@ -248,11 +273,13 @@ SK_INTRINSIC skI_gt (skE *env)
 
 SK_INTRINSIC skI_lt (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_NUMBER);
-	skO_checkType(l, SKO_NUMBER);
+	skE_checkType(env, r, SKO_NUMBER);
+	skE_checkType(env, l, SKO_NUMBER);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.boolean = l->data.number < r->data.number;
 	l->tag = SKO_BOOLEAN;
@@ -265,11 +292,13 @@ SK_INTRINSIC skI_lt (skE *env)
 
 SK_INTRINSIC skI_and (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_BOOLEAN);
-	skO_checkType(l, SKO_BOOLEAN);
+	skE_checkType(env, r, SKO_BOOLEAN);
+	skE_checkType(env, l, SKO_BOOLEAN);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.boolean = l->data.boolean && r->data.boolean;
 
@@ -281,11 +310,13 @@ SK_INTRINSIC skI_and (skE *env)
 
 SK_INTRINSIC skI_or (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
 
-	skO_checkType(r, SKO_BOOLEAN);
-	skO_checkType(l, SKO_BOOLEAN);
+	skE_checkType(env, r, SKO_BOOLEAN);
+	skE_checkType(env, l, SKO_BOOLEAN);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	l->data.boolean = l->data.boolean || r->data.boolean;
 
@@ -297,9 +328,10 @@ SK_INTRINSIC skI_or (skE *env)
 
 SK_INTRINSIC skI_not (skE *env)
 {
-	skO *l = skE_stackPop(env);
+	skO *l = skE_stackPeek(env, 0);
 
-	skO_checkType(l, SKO_BOOLEAN);
+	skE_checkType(env, l, SKO_BOOLEAN);
+	skE_stackPop(env);
 
 	l->data.boolean = !l->data.boolean;
 
@@ -310,8 +342,10 @@ SK_INTRINSIC skI_not (skE *env)
 
 SK_INTRINSIC skI_exec (skE *env)
 {
-	skO *list = skE_stackPop(env);
-	skO_checkType(list, SKO_LIST);
+	skO *list = skE_stackPeek(env, 0);
+
+	skE_checkType(env, list, SKO_LIST);
+	skE_stackPop(env);
 
 	return list;
 }
@@ -321,20 +355,28 @@ SK_INTRINSIC skI_parse (skE *env)
 	char    *cursor;
 	char    *str;
 	skO     *node;
-	skO     *list = skE_stackPop(env);
-	int     count = 1; /* string will be 0 terminated */
-	int     i     = 0;
+	skO     *list = skE_stackPeek(env, 0);
+	size_t  count = 1; /* string will be 0 terminated */
+	size_t  i     = 0;
 	jmp_buf jmp;
 
-	skO_checkType(list, SKO_LIST);
+	skE_checkType(env, list, SKO_LIST);
 
 	node = list->data.list;
 	while (node) {
+		skE_checkType(env, node, SKO_CHARACTER);
+		if (node->data.character == 0)
+			skE_error(env, "$parse: source contains a NUL character.");
+		if (count == SIZE_MAX)
+			skE_error(env, "$parse: source is too long.");
 		count++;
 		node = node->next;
 	}
 
 	str = malloc(count);
+	if (!str)
+		skE_error(env, "$parse: could not allocate source buffer.");
+	skE_stackPop(env);
 
 	node = list->data.list;
 	while (node) {
@@ -363,11 +405,13 @@ SK_INTRINSIC skI_parse (skE *env)
 
 SK_INTRINSIC skI_exec_if (skE *env)
 {
-	skO *list = skE_stackPop(env);
-	skO *b    = skE_stackPop(env);
+	skO *list = skE_stackPeek(env, 0);
+	skO *b    = skE_stackPeek(env, 1);
 
-	skO_checkType(list, SKO_LIST);
-	skO_checkType(b, SKO_BOOLEAN);
+	skE_checkType(env, list, SKO_LIST);
+	skE_checkType(env, b, SKO_BOOLEAN);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	if (b->data.boolean) {
 		skO_free(b);
@@ -427,8 +471,11 @@ int skO_eql (skO *l, skO *r)
 
 SK_INTRINSIC skI_eql (skE *env)
 {
-	skO *r = skE_stackPop(env);
-	skO *l = skE_stackPop(env);
+	skO *r = skE_stackPeek(env, 0);
+	skO *l = skE_stackPeek(env, 1);
+
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	if (skO_eql(l, r)) {
 		skE_stackPush(env, skO_boolean_new(1));
@@ -445,8 +492,12 @@ SK_INTRINSIC skI_eql (skE *env)
 SK_INTRINSIC skI_length (skE *env)
 {
 	size_t len = 0;
-	skO *list = skE_stackPop(env);
-	skO *node = list->data.list;
+	skO *list = skE_stackPeek(env, 0);
+	skO *node;
+
+	skE_checkType(env, list, SKO_LIST);
+	skE_stackPop(env);
+	node = list->data.list;
 
 	while (node) {
 		len++;
@@ -461,8 +512,12 @@ SK_INTRINSIC skI_length (skE *env)
 
 SK_INTRINSIC skI_cons (skE *env)
 {
-	skO *obj  = skE_stackPop(env);
-	skO *list = skE_stackPop(env);
+	skO *obj  = skE_stackPeek(env, 0);
+	skO *list = skE_stackPeek(env, 1);
+
+	skE_checkType(env, list, SKO_LIST);
+	skE_stackPop(env);
+	skE_stackPop(env);
 
 	obj->next = list->data.list;
 	list->data.list = obj;
@@ -475,8 +530,12 @@ SK_INTRINSIC skI_cons (skE *env)
 SK_INTRINSIC skI_uncons (skE *env)
 {
 	skO *obj;
-	skO *list = skE_stackPop(env);
+	skO *list = skE_stackPeek(env, 0);
 
+	skE_checkType(env, list, SKO_LIST);
+	if (!list->data.list)
+		skE_error(env, "uncons: cannot remove an element from an empty list.");
+	skE_stackPop(env);
 	obj = list->data.list;
 	list->data.list = obj->next;
 	obj->next = NULL;
@@ -493,23 +552,24 @@ SK_INTRINSIC skI_with (skE *env)
 	size_t i = 0;
 	skO *ast;
 	skO *skchar;
-	skO *fname = skE_stackPop(env);
+	skO *fname = skE_stackPeek(env, 0);
 
-	skO_checkType(fname, SKO_LIST);
+	skE_checkType(env, fname, SKO_LIST);
 	skchar = fname->data.list;
 
 	while (skchar) {
-		if (skchar->tag != SKO_CHARACTER || i >= sizeof(buffer) - 1) {
-			fprintf(stderr, "PANIC! Invalid or too long file path.\n");
-			skO_free(fname);
-			longjmp(env->jmp, 1);
-		}
+		skE_checkType(env, skchar, SKO_CHARACTER);
+		if (skchar->data.character == 0)
+			skE_error(env, "with: file path contains a NUL character.");
+		if (i >= sizeof(buffer) - 1)
+			skE_error(env, "with: file path is too long.");
 		buffer[i] = skchar->data.character;
 		skchar = skchar->next;
 		i++;
 	}
 	buffer[i] = 0;
 
+	skE_stackPop(env);
 	ast = skO_loadParse(buffer);
 	skO_free(fname);
 
@@ -556,7 +616,12 @@ SK_INTRINSIC skI_type (skE *env)
 
 SK_INTRINSIC skI_quote (skE *env)
 {
-	skO *sym = skE_stackPop(env);
+	skO *sym = skE_stackPeek(env, 0);
+
+	if (sym->tag != SKO_SYMBOL && sym->tag != SKO_QSYMBOL)
+		skE_error(env, "quote: expected Symbol or QuotedSymbol, got %s.",
+			skO_typeName(sym->tag));
+	skE_stackPop(env);
 	sym->tag = SKO_QSYMBOL;
 	skE_stackPush(env, sym);
 
@@ -565,7 +630,12 @@ SK_INTRINSIC skI_quote (skE *env)
 
 SK_INTRINSIC skI_unquote (skE *env)
 {
-	skO *sym = skE_stackPop(env);
+	skO *sym = skE_stackPeek(env, 0);
+
+	if (sym->tag != SKO_SYMBOL && sym->tag != SKO_QSYMBOL)
+		skE_error(env, "unquote: expected Symbol or QuotedSymbol, got %s.",
+			skO_typeName(sym->tag));
+	skE_stackPop(env);
 	sym->tag = SKO_SYMBOL;
 	skE_stackPush(env, sym);
 
@@ -574,11 +644,13 @@ SK_INTRINSIC skI_unquote (skE *env)
 
 SK_INTRINSIC skI_try (skE *env)
 {
-	skO *action = skE_stackPop(env);
-	skE *local  = skE_new();
+	skO *action = skE_stackPeek(env, 0);
+	skE *local;
 	skO *result;
 
-	skO_checkType(action, SKO_LIST);
+	skE_checkType(env, action, SKO_LIST);
+	skE_stackPop(env);
+	local = skE_new();
 
 	local->scope = env->scope;
 	local->stack = NULL;

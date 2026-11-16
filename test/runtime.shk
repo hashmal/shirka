@@ -1,0 +1,19 @@
+-- Runtime type checks. Each failing computation below should print TRUE.
+-- These lines can also be entered individually in examples/repl.shk.
+-- `try' currently returns only a status on failure, so do not drop a payload.
+
+[ 1 length? ]           try :$try/failed = puts
+[ [] uncons ]           try :$try/failed = puts
+[ 1 quote ]             try :$try/failed = puts
+[ 1 TRUE + ]            try :$try/failed = puts
+[ 1 + ]                 try :$try/failed = puts
+[ 1 2 cons ]            try :$try/failed = puts
+[ ['a 1] $parse ]       try :$try/failed = puts
+[ [1] with ]            try :$try/failed = puts
+[ TRUE 1 !? ]           try :$try/failed = puts
+[ 1 :foo $=> ]          try :$try/failed = puts
+
+-- Valid operations should still print 42, foo, and 42 respectively.
+[] 42 cons uncons puts <<
+:foo quote quote unquote unquote quote puts
+"40 2 +" $parse ! puts
