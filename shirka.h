@@ -118,9 +118,9 @@ skO *skO_list_new          (void);
 skO *skO_parse (char **next, jmp_buf jmp, char *delim);
 
 /*
- * Parse a file.
+ * Parse a file. Loading and syntax errors jump to the environment handler.
  */
-skO *skO_loadParse (char *path);
+skO *skO_loadParse (skE *env, char *path);
 
 /*
  * Perform a deep copy of `obj'. Object referenced in the `next' field of the

@@ -33,3 +33,14 @@ The resulting program can read and execute Shirka files:
     ./shirka FILE
 
 A rudimentary REPL written in Shirka itself lies in the `examples` directory.
+
+Exception handling
+------------------
+`try` executes a list on an isolated stack. It returns a result list followed
+by `:$try/ok` on success, or an empty error list followed by `:$try/failed`
+on failure. Runtime and parser diagnostics are written to standard error.
+File loading through `with` also uses this error handler.
+
+`rescue` removes the status and runs its handler only on failure. The handler
+receives the error list; on success, the result list remains on the stack.
+The isolated stack does not roll back output or other external effects.

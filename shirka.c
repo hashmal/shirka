@@ -23,10 +23,10 @@ int main (int argc, char const *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	ast = skO_loadParse("lib/prelude.shk");
+	ast = skO_loadParse(env, "lib/prelude.shk");
 	skE_execList(env, ast, 0);
 
-	ast = skO_loadParse((char *)argv[1]);
+	ast = skO_loadParse(env, (char *)argv[1]);
 	skE_execList(env, ast, 1);
 
 	if (env->stack)

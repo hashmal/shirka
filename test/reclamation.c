@@ -79,6 +79,9 @@ static void exercise (void)
 	run("[[] => f <- f] try", 1);
 	run("42 -> x [x 1 missing 2] try x", 1);
 	run("[\"[ : ]\" $parse 1] try", 1);
+	run("[\"test/fixtures/absent.shk\" with] try", 1);
+	run("[\"test/fixtures/malformed.shk\" with] try", 1);
+	run("[\"test/fixtures\" with] try", 1);
 	run("[1] => f f 2 f", 1);
 	run("[1] => f f", 1);
 

@@ -571,7 +571,7 @@ SK_INTRINSIC skI_with (skE *env)
 
 	skE_stackPop(env);
 	skO_free(fname);
-	ast = skO_loadParse(buffer);
+	ast = skO_loadParse(env, buffer);
 
 	skE_execList(env, ast, 0);
 
@@ -656,6 +656,8 @@ SK_INTRINSIC skI_try (skE *env)
 	local->scope_base = env->scope;
 
 	if (setjmp(local->jmp)) {
+		/* Keep the result shape identical on both paths. */
+		skE_stackPush(env, skO_list_new());
 		skE_stackPush(env, skO_quoted_symbol_new("$try/failed"));
 	} else {
 		skE_execList(local, action, 1);

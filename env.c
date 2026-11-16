@@ -378,7 +378,7 @@ void skE_execList (skE *env, skO *list, int scoping)
 	free(frame);
 }
 
-skO *skO_loadParse (char *path)
+skO *skO_loadParse (skE *env, char *path)
 {
 	FILE   *f;
 	long   file_size_result;
@@ -389,10 +389,8 @@ skO *skO_loadParse (char *path)
 	jmp_buf jmp;
 
 	f = fopen(path, "rb");
-	if (!f) {
-		fprintf(stderr, "INTERPRETER ERROR! Could not open file %s.\n", path);
-		exit(EXIT_FAILURE);
-	}
+	if (!f)
+		skE_error(env, "Could not open file %s.", path);
 	/* get file size */
 	if (fseek(f, 0, SEEK_END) != 0)
 		goto read_error;
@@ -416,8 +414,7 @@ skO *skO_loadParse (char *path)
 
 	if (setjmp(jmp)) {
 		free(src);
-		fprintf(stderr, "Syntax error in file %s\n", path);
-		exit(EXIT_FAILURE);
+		skE_error(env, "Syntax error in file %s.", path);
 	}
 
 	cursor = src;
@@ -429,8 +426,8 @@ skO *skO_loadParse (char *path)
 
 read_error:
 	fclose(f);
-	fprintf(stderr, "INTERPRETER ERROR! Could not read file %s.\n", path);
-	exit(EXIT_FAILURE);
+	skE_error(env, "Could not read file %s.", path);
+	return NULL; /* skE_error does not return. */
 }
 
 #include "intrinsics.c"
