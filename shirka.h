@@ -41,6 +41,7 @@ typedef struct skO      skO;
 typedef struct skE      skE;
 typedef struct context  context;
 typedef struct reserved reserved;
+typedef struct execution execution;
 
 struct symbol {
 	char   name[SYMBOL_MAX_LENGTH];
@@ -71,6 +72,8 @@ struct skO {
 struct skE {
 	skO     *stack;
 	context *scope;
+	context *scope_base; /* Borrowed scopes begin here; NULL for a root environment. */
+	execution *execution;
 	jmp_buf jmp;
 };
 
@@ -155,7 +158,7 @@ void sk_list_append (skO *list, skO *obj);
 skE *skE_new          (void);
 void skE_init         (skE *env);
 
-/* Release an environment and its contents. */
+/* Release owned stack values, pending execution, and scopes up to scope_base. */
 void skE_free         (skE *env);
 
 /* Define or undefine named entities in the current scope. */
@@ -180,7 +183,7 @@ skO *skE_stackPeek    (skE *env, size_t depth);
 void skE_stackPush    (skE *env, skO *obj);
 skO *skE_stackPop     (skE *env);
 
-/* Execute objects in an environment. */
+/* Execute objects in an environment. Both calls consume their object argument. */
 void skE_call         (skE *env, skO *sym);
 void skE_execList     (skE *env, skO *list, int scoping);
 

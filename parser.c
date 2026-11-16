@@ -429,7 +429,7 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 {
 	skO     *obj;                       /* parsed token (or NULL)       */
-	skO     *list     = skO_list_new(); /* used to store parsed objects */
+	skO     *list;                     /* used to store parsed objects */
 	/* Preserve ownership of pending prefix tokens across longjmp. */
 	skO     *volatile prefixed = NULL;
 	char    *src      = *next;
@@ -437,6 +437,9 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	int     ended     = 0;
 
 	consume_leading(&src);
+	if (delim && *src != delim[0])
+		return NULL;
+	list = skO_list_new();
 
 	if (setjmp(pe)) {
 		if (prefixed)
@@ -446,10 +449,6 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	}
 
 	if (delim) {
-		if (*src != delim[0]) {
-			skO_free(list);
-			return NULL;
-		}
 		src++;
 		consume_leading(&src);
 		#ifdef SK_PARSER_DEBUG

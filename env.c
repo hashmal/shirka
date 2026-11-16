@@ -8,6 +8,14 @@
 
 void load_intrinsics (skE *env);
 
+/* Pending instructions and the detached token currently being executed remain
+ * owned by the environment, even if a native operation jumps out of execution. */
+struct execution {
+	execution *parent; /* Enclosing execution in this environment. */
+	skO *list;         /* Remaining instructions, excluding current. */
+	skO *current;      /* Detached token being processed; NULL once released. */
+};
+
 void skE_error (skE *env, const char *format, ...)
 {
 	va_list args;
@@ -106,6 +114,8 @@ skE *skE_new (void)
 	skE *env = malloc(sizeof(skE));
 	env->stack = NULL;
 	env->scope = NULL;
+	env->scope_base = NULL;
+	env->execution = NULL;
 
 	return env;
 }
@@ -118,7 +128,20 @@ void skE_init (skE *env)
 
 void skE_free (skE *env)
 {
-	skE_scopePop(env);
+	execution *frame;
+
+	while (env->execution) {
+		frame = env->execution;
+		env->execution = frame->parent;
+		if (frame->current)
+			skO_free(frame->current);
+		skO_free(frame->list);
+		free(frame);
+	}
+	while (env->stack)
+		skO_free(skE_stackPop(env));
+	while (env->scope != env->scope_base)
+		skE_scopePop(env);
 	free(env);
 }
 
@@ -168,6 +191,8 @@ void skE_defOperation (skE *env, skO *sym, skO *obj)
 
 	if (scope_find_current(env, sym)) {
 		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
+		skO_free(sym);
+		skO_free(obj);
 		longjmp(env->jmp, 1);
 	}
 
@@ -193,11 +218,13 @@ void skE_undef (skE *env, skO *sym)
 
 	if (!r) {
 		fprintf(stderr, "PANIC! Reserved object not found in current scope.\n");
+		skO_free(sym);
 		longjmp(env->jmp, 1);
 	}
 
 	if (r->kind != KIND_OBJECT) {
 		fprintf(stderr, "PANIC! Expected object, got native or operation.\n");
+		skO_free(sym);
 		longjmp(env->jmp, 1);
 	}
 
@@ -275,84 +302,50 @@ void skE_call (skE *env, skO *sym)
 	sk_list_append(list, sym);
 
 	skE_execList(env, list, 1);
-
-	skO_free(list);
 }
 
 void skE_execList (skE *env, skO *list, int scoping)
 {
+	execution *frame = malloc(sizeof(execution));
 	skO *cont;
-	skO *head = list->data.list;
 	skO *tok;
 	reserved *r;
 
-	list->data.list = NULL;
-	skO_free(list);
+	frame->parent = env->execution;
+	frame->list = list;
+	frame->current = NULL;
+	env->execution = frame;
 
 	if (scoping)
 		skE_scopePush(env);
 
-#ifdef SK_O_TAIL
-tail:
-#endif
-	while (head) {
-		tok = head;
-		head = head->next;
+	while (frame->list->data.list) {
+		tok = frame->list->data.list;
+		frame->list->data.list = tok->next;
+		tok->next = NULL;
+		frame->current = tok;
+		cont = NULL;
 
 		switch (tok->tag) {
 		case SKO_SYMBOL:
 			r = scope_find(env, tok);
-			if (!r) {
-				fprintf(stderr, "PANIC! Not found: %s\n", (tok->data.sym)->name);
-				longjmp(env->jmp, 1);
-			}
+			if (!r)
+				skE_error(env, "Not found: %s", tok->data.sym->name);
 			switch (r->kind) {
 			case KIND_OBJECT:
 				skE_stackPush(env, skO_clone(r->data.obj));
 				break;
 			case KIND_OPERATION:
-				#ifdef SK_O_TAIL
-				if (tok->next) {
-					skE_execList(env, skO_clone(r->data.obj), 1);
-				} else {
-					skO_free(tok);
-					tok = skO_clone(r->data.obj);
-					head = tok->data.list;
-					tok->data.list = NULL;
-					skO_free(tok);
-					goto tail;
-				}
-				#else
-				skE_execList(env, skO_clone(r->data.obj), 1);
-				#endif
+				cont = skO_clone(r->data.obj);
 				break;
 			case KIND_NATIVE:
-				#ifdef SK_O_TAIL
 				cont = r->data.native(env);
-
-				if (cont) {
-					if (tok->next) {
-						skE_execList(env, cont, 1);
-					} else {
-						skO_free(tok);
-						head = cont->data.list;
-						cont->data.list = NULL;
-						skO_free(cont);
-						goto tail;
-					}
-				}
-				#else
-				cont = r->data.native(env);
-				if (cont)
-					skE_execList(env, cont, 1);
-				#endif
 				break;
 			default:
-				fprintf(stderr, "PANIC! Internal kind error.\n");
-				longjmp(env->jmp, 1);
+				skE_error(env, "Internal kind error.");
 			}
-
 			skO_free(tok);
+			frame->current = NULL;
 			break;
 		case SKO_QSYMBOL:
 		case SKO_NUMBER:
@@ -360,15 +353,29 @@ tail:
 		case SKO_LIST:
 		case SKO_BOOLEAN:
 			skE_stackPush(env, tok);
+			frame->current = NULL;
 			break;
 		default:
-			fprintf(stderr, "PANIC! Internal type error.\n");
-			longjmp(env->jmp, 1);
+			skE_error(env, "Internal type error.");
+		}
+
+		if (cont) {
+			#ifdef SK_O_TAIL
+			if (!frame->list->data.list) {
+				skO_free(frame->list);
+				frame->list = cont;
+				continue;
+			}
+			#endif
+			skE_execList(env, cont, 1);
 		}
 	}
 
 	if (scoping)
 		skE_scopePop(env);
+	env->execution = frame->parent;
+	skO_free(frame->list);
+	free(frame);
 }
 
 skO *skO_loadParse (char *path)

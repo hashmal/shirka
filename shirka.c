@@ -13,11 +13,13 @@ int main (int argc, char const *argv[])
 
 	if (setjmp(env->jmp)) {
 		printf("Panic mode was set. Aborting.\n");
+		skE_free(env);
 		exit(EXIT_FAILURE);
 	}
 
 	if (argc != 2) {
 		puts("Wrong number of command line arguments.");
+		skE_free(env);
 		exit(EXIT_FAILURE);
 	}
 
@@ -30,5 +32,6 @@ int main (int argc, char const *argv[])
 	if (env->stack)
 		printf("WARNING! Stack non empty upon exit.\n");
 
+	skE_free(env);
 	return 0;
 }

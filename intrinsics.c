@@ -570,8 +570,8 @@ SK_INTRINSIC skI_with (skE *env)
 	buffer[i] = 0;
 
 	skE_stackPop(env);
-	ast = skO_loadParse(buffer);
 	skO_free(fname);
+	ast = skO_loadParse(buffer);
 
 	skE_execList(env, ast, 0);
 
@@ -653,7 +653,7 @@ SK_INTRINSIC skI_try (skE *env)
 	local = skE_new();
 
 	local->scope = env->scope;
-	local->stack = NULL;
+	local->scope_base = env->scope;
 
 	if (setjmp(local->jmp)) {
 		skE_stackPush(env, skO_quoted_symbol_new("$try/failed"));
@@ -666,8 +666,6 @@ SK_INTRINSIC skI_try (skE *env)
 		skE_stackPush(env, skO_quoted_symbol_new("$try/ok"));
 	}
 
-	local->scope = NULL;
-	skE_scopePush(local);
 	skE_free(local);
 	return NULL;
 }
