@@ -102,6 +102,56 @@ static void exercise (void)
 	skE_free(env);
 }
 
+/* A persistent host resumes after each submission, just as ripple does. */
+static void submit (skE *env, char *source)
+{
+	context *scope = env->scope;
+	skO *list;
+
+	if (setjmp(env->jmp)) {
+		skE_unwind(env, scope);
+		return;
+	}
+	if (skO_read(source, &list) != SK_PARSE_OK)
+		return;
+	sk_list_append(list, skO_list_new());
+	skE_execList(env, list, 0);
+	skO_free(skE_stackPop(env));
+	assert(env->scope == scope && !env->execution);
+}
+
+static void persistent_session (void)
+{
+	skE *env = skE_new();
+	context *scope;
+	size_t baseline;
+	int i;
+
+	skE_init(env);
+	skE_scopePush(env);
+	scope = env->scope;
+	submit(env, "42 -> persistent [1 +] => increment");
+	/* Warm symbols before checking the allocation count. */
+	submit(env, "[1 -> temporary missing 2] !");
+	baseline = allocations;
+	for (i = 0; i < 100; i++) {
+		submit(env, "1 increment");
+		assert(env->stack->data.number == 2);
+		skO_free(skE_stackPop(env));
+		submit(env, "[1 -> temporary missing 2] !");
+		submit(env, "1 TRUE +");
+		assert(env->stack->tag == SKO_BOOLEAN);
+		while (env->stack)
+			skO_free(skE_stackPop(env));
+		submit(env, "[ : ]");
+		assert(env->scope == scope && !env->execution);
+		assert(allocations == baseline);
+	}
+	submit(env, "persistent");
+	assert(env->stack->data.number == 42);
+	skE_free(env);
+}
+
 int main (void)
 {
 	size_t baseline;
@@ -117,6 +167,7 @@ int main (void)
 	}
 
 	/* Interning is intentional. Warm all names before measuring repetitions. */
+	persistent_session();
 	exercise();
 	baseline = allocations;
 	for (i = 0; i < 100; i++) {

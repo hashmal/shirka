@@ -12,7 +12,7 @@ shirka: shirka.c shirka.h env.o objects.o parser.o intrinsics.c
 
 clean:
 	rm -f *.o
-	rm -f shirka
+	rm -f shirka utils/ripple/ripple
 
 test: shirka test-harness
 	./shirka test/parser.shk
@@ -38,4 +38,26 @@ test-harness: shirka
 	build_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$build_dir"' 0; \
 	$(CC) $(CFLAGS) test/harness.c -o "$$build_dir/test"; \
+	"$$build_dir/test"
+
+# GNU Readline is used only by ripple. Override these on other installations.
+READLINE_PREFIX ?= $(firstword $(wildcard /opt/homebrew/opt/readline /usr/local/opt/readline))
+RIPPLE_CPPFLAGS ?= $(if $(READLINE_PREFIX),-I$(READLINE_PREFIX)/include)
+RIPPLE_LIBS ?= $(if $(READLINE_PREFIX),-L$(READLINE_PREFIX)/lib) -lreadline -lm
+
+.PHONY: ripple
+ripple: utils/ripple/ripple
+
+utils/ripple/ripple: utils/ripple/ripple.c utils/ripple/terminal.c utils/ripple/ripple.h utils/ripple/ripple.shk env.o objects.o parser.o
+	$(CC) $(CFLAGS) $(RIPPLE_CPPFLAGS) -DRIPPLE_HOME='"$(CURDIR)"' \
+		-o $@ utils/ripple/ripple.c utils/ripple/terminal.c \
+		env.o objects.o parser.o $(RIPPLE_LIBS)
+
+.PHONY: test-ripple
+test-ripple: ripple
+	@set -e; \
+	build_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$build_dir"' 0; \
+	$(CC) $(CFLAGS) -I. utils/ripple/test.c env.o objects.o parser.o \
+		-lm -lutil -o "$$build_dir/test"; \
 	"$$build_dir/test"

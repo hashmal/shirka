@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <setjmp.h>
+#include <signal.h>
 
 #define SK_O_TAIL
 
@@ -74,6 +75,7 @@ struct skE {
 	context *scope;
 	context *scope_base; /* Borrowed scopes begin here; NULL for a root environment. */
 	execution *execution;
+	volatile sig_atomic_t *interrupt; /* Optional cooperative cancellation flag. */
 	jmp_buf jmp;
 };
 
@@ -116,6 +118,13 @@ skO *skO_list_new          (void);
  * Parse a string.
  */
 skO *skO_parse (char **next, jmp_buf jmp, char *delim);
+
+/* A failed or incomplete read leaves result NULL and releases partial output. */
+enum { SK_PARSE_OK, SK_PARSE_ERROR, SK_PARSE_MORE };
+int skO_read (char *source, skO **result);
+
+/* Bounded, non-consuming inspection. Truncation is marked with an ellipsis. */
+void skO_inspect (skO *obj, char *buffer, size_t size, unsigned depth);
 
 /*
  * Parse a file. Loading and syntax errors jump to the environment handler.
@@ -160,6 +169,9 @@ void skE_init         (skE *env);
 
 /* Release owned stack values, pending execution, and scopes up to scope_base. */
 void skE_free         (skE *env);
+
+/* Discard pending execution and scopes above stop; preserve stack and stop. */
+void skE_unwind       (skE *env, context *stop);
 
 /* Define or undefine named entities in the current scope. */
 void skE_defNative    (skE *env, char *name, skE_natOp *native);

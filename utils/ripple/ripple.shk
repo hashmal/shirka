@@ -1,0 +1,25 @@
+-- ripple's control stack is separate from the persistent user stack.
+-- Native bridges inspect or evaluate that session without transferring it here.
+
+(=> ripple/help) [
+  "/help       show this help" puts
+  "/exit       leave ripple" puts
+  "/stack      inspect the session stack (bounded)" puts
+  "/clear      clear the session stack; keep definitions" puts
+  "/load PATH  execute a file in the current session" puts
+  "" puts
+  "Input values and definitions persist. Errors keep completed changes." puts
+  "Ctrl-C cancels input or interrupts between interpreter steps." puts
+]
+
+(=> ripple/step) [
+  ripple/command -> command
+  command :help = [ ripple/help ] !?
+  command :exit = [ ripple/stop ] !?
+  command :stack = [ ripple/stack ] !?
+  command :clear = [ ripple/clear ] !?
+  command :load = [ ripple/load ] !?
+  command :code = [ ripple/eval ] !?
+]
+
+([ripple/read] while) [ ripple/step ]

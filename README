@@ -74,3 +74,11 @@ suites leave the caller's stack unchanged. Empty suites are allowed.
 consuming an argument. Like other errors, an explicit enclosing `try` can
 catch it; tests must not suppress assertion failures if they want a nonzero
 exit status. Expected-error assertions can still emit diagnostics on stderr.
+
+Interactive session (ripple)
+----------------------------
+`make ripple` builds `utils/ripple/ripple`, a persistent interactive REPL.
+Only this optional target requires GNU Readline. Editing, multiline input,
+history, commands, recovery behavior, and licensing/build implications are
+documented in `utils/ripple/README.md`. Run `make test-ripple` for its C and
+pseudo-terminal checks. The original `examples/repl.shk` is still available.

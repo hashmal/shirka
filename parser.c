@@ -183,13 +183,13 @@ skO *parse_character (char **next, jmp_buf jmp)
 	char *c = *next;
 	char result = 0;
 
-	if (*c == 0) {
-		fprintf(stderr, "PANIC! Incomplete character literal.\n");
-		longjmp(jmp, 1);
-	}
+	if (*c == 0)
+		longjmp(jmp, SK_PARSE_MORE);
 
 	if (*c == '\\') {
 		c++;
+		if (*c == 0)
+			longjmp(jmp, SK_PARSE_MORE);
 		switch (*c) {
 		case '\\':
 			result = '\\';
@@ -400,6 +400,7 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 {
 	skO *list;
 	jmp_buf string_error;
+	int status;
 
 	if (**next != '"')
 		return NULL;
@@ -407,14 +408,13 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 	++*next;
 	list = skO_list_new();
 
-	if (setjmp(string_error)) {
+	if ((status = setjmp(string_error))) {
 		skO_free(list);
-		longjmp(jmp, 1);
+		longjmp(jmp, status);
 	}
 	while (**next != '"') {
 		if (**next == 0) {
-			fprintf(stderr, "PANIC! Unterminated string.\n");
-			longjmp(string_error, 1);
+			longjmp(string_error, SK_PARSE_MORE);
 		}
 		sk_list_append(list, parse_character(next, string_error));
 	}
@@ -434,6 +434,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	skO     *volatile prefixed = NULL;
 	char    *src      = *next;
 	jmp_buf pe;
+	int     status;
 	int     ended     = 0;
 
 	consume_leading(&src);
@@ -441,11 +442,11 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		return NULL;
 	list = skO_list_new();
 
-	if (setjmp(pe)) {
+	if ((status = setjmp(pe))) {
 		if (prefixed)
 			skO_free(prefixed);
 		skO_free(list);
-		longjmp(jmp, 1);
+		longjmp(jmp, status);
 	}
 
 	if (delim) {
@@ -463,8 +464,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		if (*src == 0) {
 			if (delim) {
-				fprintf(stderr, "PANIC! Missing closing %c.\n", delim[1]);
-				longjmp(pe, 1);
+				longjmp(pe, SK_PARSE_MORE);
 			}
 			ended = 1;
 			*next = src;
@@ -487,8 +487,11 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		/* Handle "prefix style" syntactic sugar. */
 
 		prefixed = skO_parse(&src, pe, "()");
-		if (prefixed)
+		if (prefixed) {
 			consume_leading(&src);
+			if (*src == 0)
+				longjmp(pe, SK_PARSE_MORE);
+		}
 
 		/* Handle "reserving operations" syntactic sugar. */
 
@@ -540,4 +543,18 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 	*next = src;
 	return list;
+}
+
+/* Read once using the real parser; partial trees are reclaimed by its handlers. */
+int skO_read (char *source, skO **result)
+{
+	char *cursor = source;
+	jmp_buf error;
+	int status;
+
+	*result = NULL;
+	if ((status = setjmp(error)))
+		return status;
+	*result = skO_parse(&cursor, error, NULL);
+	return SK_PARSE_OK;
 }

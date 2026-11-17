@@ -1,3 +1,6 @@
 shirka
 tmp/*
 *.o
+
+utils/ripple/ripple
+utils/ripple/*.dSYM/

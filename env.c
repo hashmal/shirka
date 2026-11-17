@@ -116,6 +116,7 @@ skE *skE_new (void)
 	env->scope = NULL;
 	env->scope_base = NULL;
 	env->execution = NULL;
+	env->interrupt = NULL;
 
 	return env;
 }
@@ -126,7 +127,7 @@ void skE_init (skE *env)
 	load_intrinsics(env);
 }
 
-void skE_free (skE *env)
+void skE_unwind (skE *env, context *stop)
 {
 	execution *frame;
 
@@ -138,10 +139,15 @@ void skE_free (skE *env)
 		skO_free(frame->list);
 		free(frame);
 	}
+	while (env->scope != stop)
+		skE_scopePop(env);
+}
+
+void skE_free (skE *env)
+{
+	skE_unwind(env, env->scope_base);
 	while (env->stack)
 		skO_free(skE_stackPop(env));
-	while (env->scope != env->scope_base)
-		skE_scopePop(env);
 	free(env);
 }
 
@@ -320,6 +326,8 @@ void skE_execList (skE *env, skO *list, int scoping)
 		skE_scopePush(env);
 
 	while (frame->list->data.list) {
+		if (env->interrupt && *env->interrupt)
+			skE_error(env, "Interrupted.");
 		tok = frame->list->data.list;
 		frame->list->data.list = tok->next;
 		tok->next = NULL;

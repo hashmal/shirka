@@ -660,6 +660,7 @@ SK_INTRINSIC skI_try (skE *env)
 
 	local->scope = env->scope;
 	local->scope_base = env->scope;
+	local->interrupt = env->interrupt;
 
 	if (setjmp(local->jmp)) {
 		/* Keep the result shape identical on both paths. */

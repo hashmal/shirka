@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "shirka.h"
 
 symbol *symbol_list = NULL;
@@ -211,4 +212,131 @@ void skO_checkType(skO *obj, skO_t type)
 	fprintf(stderr, "INTERPRETER ERROR! Expected `%s' but got `%s'.\n",
 		skO_typeName(type), skO_typeName(obj->tag));
 	exit(EXIT_FAILURE);
+}
+
+/* Inspection never follows more data than fits in the caller's buffer. */
+struct inspection {
+	char *buffer;
+	size_t size;
+	size_t used;
+	int shortened;
+};
+
+static void inspect_text (struct inspection *out, const char *text)
+{
+	while (*text && out->used + 1 < out->size)
+		out->buffer[out->used++] = *text++;
+	if (*text)
+		out->shortened = 1;
+}
+
+static void inspect_byte (struct inspection *out, unsigned char c)
+{
+	char escaped[8];
+
+	switch (c) {
+	case '\n': inspect_text(out, "\\n"); break;
+	case '\r': inspect_text(out, "\\r"); break;
+	case '\t': inspect_text(out, "\\t"); break;
+	case ' ':  inspect_text(out, "\\s"); break;
+	case '\\': inspect_text(out, "\\\\"); break;
+	case '"':  inspect_text(out, "\\\""); break;
+	default:
+		if (c < 33 || c > 126) {
+			snprintf(escaped, sizeof(escaped), "\\x%02x", c);
+			inspect_text(out, escaped);
+		} else {
+			escaped[0] = (char)c;
+			escaped[1] = 0;
+			inspect_text(out, escaped);
+		}
+	}
+}
+
+static void inspect_value (struct inspection *out, skO *obj, unsigned depth)
+{
+	skO *node;
+	char number[32];
+	const unsigned char *name;
+	unsigned characters;
+
+	if (out->used + 1 >= out->size) {
+		out->shortened = 1;
+		return;
+	}
+	switch (obj->tag) {
+	case SKO_NUMBER:
+		if (!isfinite(obj->data.number)) {
+			inspect_text(out, isnan(obj->data.number) ? "Number(NaN)" :
+				(obj->data.number < 0 ? "Number(-Infinity)" : "Number(Infinity)"));
+			break;
+		}
+		snprintf(number, sizeof(number), "%.17g", obj->data.number);
+		inspect_text(out, number);
+		break;
+	case SKO_BOOLEAN:
+		inspect_text(out, obj->data.boolean ? "TRUE" : "FALSE");
+		break;
+	case SKO_CHARACTER:
+		inspect_text(out, "'");
+		inspect_byte(out, (unsigned char)obj->data.character);
+		break;
+	case SKO_QSYMBOL:
+	case SKO_SYMBOL:
+		if (obj->tag == SKO_QSYMBOL)
+			inspect_text(out, ":");
+		else
+			inspect_text(out, "Symbol(");
+		name = (const unsigned char *)obj->data.sym->name;
+		while (*name && !out->shortened)
+			inspect_byte(out, *name++);
+		if (obj->tag == SKO_SYMBOL)
+			inspect_text(out, ")");
+		break;
+	case SKO_LIST:
+		/* Recognize only short complete strings; never scan an unbounded list. */
+		node = obj->data.list;
+		characters = 0;
+		while (node && node->tag == SKO_CHARACTER && characters < 64) {
+			characters++;
+			node = node->next;
+		}
+		if (!node && characters) {
+			inspect_text(out, "\"");
+			for (node = obj->data.list; node && !out->shortened; node = node->next)
+				inspect_byte(out, (unsigned char)node->data.character);
+			inspect_text(out, "\"");
+			break;
+		}
+		inspect_text(out, "[");
+		node = obj->data.list;
+		if (node && !depth)
+			inspect_text(out, "...");
+		else while (node && !out->shortened) {
+			inspect_value(out, node, depth - 1);
+			node = node->next;
+			if (node)
+				inspect_text(out, " ");
+		}
+		inspect_text(out, "]");
+		break;
+	}
+}
+
+void skO_inspect (skO *obj, char *buffer, size_t size, unsigned depth)
+{
+	struct inspection out;
+
+	if (!size)
+		return;
+	out.buffer = buffer;
+	out.size = size;
+	out.used = 0;
+	out.shortened = 0;
+	inspect_value(&out, obj, depth);
+	if (out.shortened && size >= 4) {
+		out.used = size - 1;
+		memcpy(buffer + out.used - 3, "...", 3);
+	}
+	buffer[out.used] = 0;
 }
