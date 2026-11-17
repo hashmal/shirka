@@ -1,0 +1,58 @@
+{
+  "name": "vscode-shirka",
+  "displayName": "Shirka",
+  "description": "Shirka syntax highlighting, snippets, brackets, comments, indentation, and folding.",
+  "version": "0.1.1",
+  "publisher": "hashmal",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hashmal/shirka.git",
+    "directory": "utils/vscode-shirka"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "shirka",
+        "aliases": [
+          "Shirka",
+          "shirka"
+        ],
+        "extensions": [
+          ".shk"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "shirka",
+        "scopeName": "source.shirka",
+        "path": "./syntaxes/shirka.tmLanguage.json",
+        "tokenTypes": {
+          "string.quoted.single.character.shirka": "string"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "shirka",
+        "path": "./snippets/shirka.json"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "node --test test/grammar.test.cjs"
+  },
+  "devDependencies": {
+    "vscode-textmate": "^9.0.0",
+    "vscode-oniguruma": "^2.0.1"
+  }
+}

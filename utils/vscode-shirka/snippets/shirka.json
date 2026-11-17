@@ -1,0 +1,39 @@
+{
+  "Define operation": {
+    "prefix": [
+      "def",
+      "=>"
+    ],
+    "body": [
+      "(=> ${1:name})",
+      "  [ $0 ]"
+    ],
+    "description": "Define an operation using prefix sugar."
+  },
+  "Define operation inline": {
+    "prefix": "def-inline",
+    "body": "[ ${2:body} ] => ${1:name}$0",
+    "description": "Define an operation in postfix form."
+  },
+  "Reserve value": {
+    "prefix": [
+      "reserve",
+      "->"
+    ],
+    "body": "-> ${1:name}$0",
+    "description": "Move the top value into a reserve."
+  },
+  "Restore value": {
+    "prefix": [
+      "restore",
+      "<-"
+    ],
+    "body": "<- ${1:name}$0",
+    "description": "Move a reserved value back to the stack."
+  },
+  "Prefix call": {
+    "prefix": "prefix",
+    "body": "(${1:operation})\n  [ $0 ]",
+    "description": "Pass a quotation to an operation using prefix sugar."
+  }
+}

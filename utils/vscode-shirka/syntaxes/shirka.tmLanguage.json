@@ -1,0 +1,222 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Shirka",
+  "scopeName": "source.shirka",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#character"
+    },
+    {
+      "include": "#operation-definition"
+    },
+    {
+      "include": "#reservation"
+    },
+    {
+      "include": "#restoration"
+    },
+    {
+      "include": "#number"
+    },
+    {
+      "include": "#quoted-symbol"
+    },
+    {
+      "include": "#boolean"
+    },
+    {
+      "include": "#operator"
+    },
+    {
+      "include": "#builtin"
+    },
+    {
+      "include": "#identifier"
+    },
+    {
+      "include": "#list"
+    },
+    {
+      "include": "#prefix"
+    },
+    {
+      "include": "#invalid"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.double-dash.shirka",
+      "begin": "--",
+      "end": "$"
+    },
+    "string": {
+      "name": "string.quoted.double.shirka",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.shirka",
+          "match": "\\\\[\\\\\"abfnrstv]"
+        },
+        {
+          "name": "invalid.illegal.escape.shirka",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "character": {
+      "name": "string.quoted.single.character.shirka",
+      "begin": "'",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.character.shirka"
+        }
+      },
+      "end": "\\\\[\\\\\"abfnrstv]|\\\\.|[^\\\\]|$",
+      "endCaptures": {
+        "0": {
+          "name": "constant.character.shirka"
+        }
+      }
+    },
+    "number": {
+      "name": "constant.numeric.shirka",
+      "match": "-?[0-9]+(?:\\.[0-9]*)?(?=\\s|[\\[\\]()]|$)"
+    },
+    "quoted-symbol": {
+      "name": "constant.other.symbol.shirka",
+      "match": ":[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/](?:(?!--)[A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/'])*",
+      "captures": {
+        "0": {
+          "name": "constant.other.symbol.shirka"
+        }
+      }
+    },
+    "list": {
+      "name": "meta.list.shirka",
+      "begin": "\\[",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.brackets.begin.shirka"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.brackets.end.shirka"
+        }
+      },
+      "patterns": [
+        {
+          "include": "$self"
+        }
+      ]
+    },
+    "prefix": {
+      "name": "meta.prefix.shirka",
+      "begin": "\\(",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.parens.begin.shirka"
+        }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.parens.end.shirka"
+        }
+      },
+      "patterns": [
+        {
+          "include": "$self"
+        }
+      ]
+    },
+    "identifier": {
+      "name": "variable.function.shirka",
+      "match": "(?!--)[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/](?:(?!--)[A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/'])*"
+    },
+    "invalid": {
+      "name": "invalid.illegal.token.shirka",
+      "match": "[^\\s]"
+    },
+    "operation-definition": {
+      "name": "meta.binding.shirka",
+      "begin": "=>(?=\\s|--|[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/])",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.operator.binding.shirka"
+        }
+      },
+      "end": "((?!--)[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/](?:(?!--)[A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/'])*)|(?=[^\\s-])|(?=-(?!-))",
+      "endCaptures": {
+        "1": {
+          "name": "entity.name.function.definition.shirka"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        }
+      ]
+    },
+    "reservation": {
+      "name": "meta.binding.shirka",
+      "begin": "\\->(?=\\s|--|[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/])",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.operator.binding.shirka"
+        }
+      },
+      "end": "((?!--)[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/](?:(?!--)[A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/'])*)|(?=[^\\s-])|(?=-(?!-))",
+      "endCaptures": {
+        "1": {
+          "name": "entity.name.variable.binding.shirka"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        }
+      ]
+    },
+    "restoration": {
+      "name": "meta.binding.shirka",
+      "begin": "<\\-(?=\\s|--|[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/])",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.operator.binding.shirka"
+        }
+      },
+      "end": "((?!--)[A-Za-z_~!@#$%^&*+\\-=|\\\\;,.<>?/](?:(?!--)[A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/'])*)|(?=[^\\s-])|(?=-(?!-))",
+      "endCaptures": {
+        "1": {
+          "name": "entity.name.variable.binding.shirka"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        }
+      ]
+    },
+    "boolean": {
+      "name": "constant.language.boolean.shirka",
+      "match": "(?:TRUE|FALSE)(?=--|[^A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/']|$)"
+    },
+    "builtin": {
+      "name": "support.function.shirka",
+      "match": "(?:QuotedSymbol\\?|Character\\?|get\\-value|included\\?|Boolean\\?|Number\\?|Symbol\\?|length\\?|product|reverse|snd\\-fst|unquote|\\$parse|append|filter|rescue|uncons|List\\?|abort|print|quote|split|times|type\\?|while|cons|each|fold|getc|gets|puts|tail|take|with|\\$\\->|\\$<\\-|\\$=>|abs|and|map|not|sum|try|!\\?|\\+\\+|\\.\\.|<<|<=|><|>=|>>|if|or|!|%|\\*|\\+|\\-|/|<|=|>|\\^)(?=--|[^A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/']|$)"
+    },
+    "operator": {
+      "name": "keyword.operator.shirka",
+      "match": "(?!--)[_~!@#$%^&*+\\-=|\\\\;,.<>?/](?:(?!--)[_~!@#$%^&*+\\-=|\\\\;,.<>?/'])*(?=--|[^A-Za-z0-9_~!@#$%^&*+\\-=|\\\\;,.<>?/']|$)"
+    }
+  }
+}
