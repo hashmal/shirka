@@ -66,6 +66,10 @@ static void exercise (void)
 	skE *env;
 
 	run("1 2 3 [4 [5]]", 1);
+	run("\"lib/prelude.shk\" with \"lib/test.shk\" with "
+		"[[1 1] assert_equal [abort] assert_error] test/run", 1);
+	run("\"lib/prelude.shk\" with \"lib/test.shk\" with "
+		"[[[1 2] assert_equal] test/run] try", 1);
 	run("\"1 2 3\" $parse", 1);
 	run("\"lib/prelude.shk\" with 10 1 .. [+] 0 fold", 1);
 	run("[1 -> x [2 -> y 3]] ! 4", 1);

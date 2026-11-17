@@ -31,13 +31,13 @@
 
   [ "0.1"     $parse                      [0.1]                 ] assert_equal
   [ "0.1"     $parse  <>type              :Number               ] assert_equal
-  [ ".1"      $parse                                            ] assert_error
-  [ "0."      $parse                                            ] assert_error
-  [ "-.0"     $parse                                            ] assert_error
+  [ ".1"      $parse                      [.1]                  ] assert_equal
+  [ "0."      $parse                      [0]                   ] assert_equal
+  [ "-.0"     $parse                      [-.0]                 ] assert_equal
 
   [ "'a"      $parse                      ['a]                  ] assert_equal
   [ "'a"      $parse  <>type              :Character            ] assert_equal
-  [ "'ab"     $parse                                            ] assert_error
+  [ "'ab"     $parse                      ['a b]                ] assert_equal
 
   [ "\"a\""   $parse                      [['a]]                ] assert_equal
   [ "\"a\""   $parse  <>type              :List                 ] assert_equal

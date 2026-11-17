@@ -44,3 +44,33 @@ File loading through `with` also uses this error handler.
 `rescue` removes the status and runs its handler only on failure. The handler
 receives the error list; on success, the result list remains on the stack.
 The isolated stack does not roll back output or other external effects.
+
+Testing
+-------
+Run `make test` from the repository root. It builds the interpreter, checks
+its test harness using a separate C driver, and runs the Shirka suites.
+`make test-harness` runs just the driver, which checks process exit status
+and diagnostics and gives each child interpreter a five-second timeout.
+
+The self-hosted framework is loaded with `"lib/test.shk" with`:
+
+    (test/run) [
+      [ 2 3 + 5 ] assert_equal
+      [ 2 3 ] assert_different
+      [ 1 TRUE + ] assert_error
+    ]
+
+Each assertion consumes a quotation and executes it on an isolated stack.
+Comparisons require exactly two results: the actual value followed by the
+expected value. `assert_error` requires execution to fail, regardless of
+how many intermediate values it produces. Assertion arguments must be lists.
+
+The first failed assertion aborts the suite. Unexpected errors, malformed
+assertions, and leftover suite-stack values also fail the suite. An uncaught
+failure exits the interpreter nonzero; `make test` stops immediately. Passing
+suites leave the caller's stack unchanged. Empty suites are allowed.
+
+`abort` is a native word that raises a catchable runtime error without
+consuming an argument. Like other errors, an explicit enclosing `try` can
+catch it; tests must not suppress assertion failures if they want a nonzero
+exit status. Expected-error assertions can still emit diagnostics on stderr.

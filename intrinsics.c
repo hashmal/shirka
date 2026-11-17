@@ -8,6 +8,12 @@
 
 #define SK_INTRINSIC skO *
 
+SK_INTRINSIC skI_abort (skE *env)
+{
+	skE_error(env, "Execution aborted.");
+	return NULL;
+}
+
 void print_list (skO *list)
 {
 	skO *node = list->data.list;

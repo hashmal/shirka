@@ -1,65 +1,80 @@
 -- Copyright (c) 2013, Jeremy Pinat.
 
 ------------------------------------------------------------------------------
---                                                                          --
 --                        TEST AUTOMATION FRAMEWORK                         --
---                                                                          --
 ------------------------------------------------------------------------------
+-- Assertions execute quotations on isolated stacks. A failed assertion aborts
+-- the suite immediately; an uncaught abort makes the interpreter exit nonzero.
 
 (=> test/run) [
-  (=> assert_equal) [
-    -> $assert/op
-    (try)    [ $assert/op !  ]
-    (rescue) [ abort ]
+  -> $test/suite
 
-    length? 2 = not (!?) [abort]
-
-    -- uncons >< uncons >< << ><
-    uncons -> result
-    uncons -> expected
-    <<
-
-    result expected = not (!?) [
-      "Equality failed:" puts
-      "  Expected: " print expected puts
-      "    Result: " print result   puts
-      "" puts
+  -- Both comparison assertions require exactly two resulting values.
+  (=> $test/pair) [
+    $test/op List? not [
+      "Assertion requires a quotation." puts abort
+    ] !?
+    try
+    (rescue) [
+      << "Unexpected error in assertion:" puts $test/op puts abort
     ]
+    length? 2 = not [
+      "Comparison requires exactly two results:" puts $test/op puts abort
+    ] !?
+  ]
+
+  (=> assert_equal) [
+    -> $test/op
+    $test/pair
+    uncons -> $test/expected
+    uncons -> $test/result
+    <<
+    $test/result $test/expected = not [
+      "Equality failed:" puts
+      "  Expected: " print $test/expected puts
+      "    Result: " print $test/result puts
+      "      Code: " print $test/op puts
+      abort
+    ] !?
   ]
 
   (=> assert_different) [
-    -> $assert/op
-    (try)    [ $assert/op !  ]
-    (rescue) [ abort ]
-
-    length? 2 = not (!?) [abort]
-
-    -- uncons >< uncons >< << ><
-    uncons -> result
-    uncons -> expected
+    -> $test/op
+    $test/pair
+    uncons -> $test/expected
+    uncons -> $test/result
     <<
-
-    result expected = (!?) [
+    $test/result $test/expected = [
       "Difference failed:" puts
-      "  Expected: " print expected puts
-      "    Result: " print result   puts
-      "" puts
-    ]
+      "Both values: " print $test/result puts
+      "      Code: " print $test/op puts
+      abort
+    ] !?
   ]
 
   (=> assert_error) [
-    -> $assert/op
-    (try) [ $assert/op ! ]
-    :$try/failed =
-    (if) [
-      [ << ]
-      [ <<
-        "Error was expected but did not happen:" puts
-        "  " print $assert/op puts "" puts ]
-    ]
+    -> $test/op
+    $test/op List? not [
+      "Assertion requires a quotation." puts abort
+    ] !?
+    try
+    :$try/failed = not [
+      "Error was expected but did not happen:" puts $test/op puts abort
+    ] !?
+    <<
   ]
 
-  "-- Running tests... (Only failed tests are displayed)\n" puts
-
-  !
+  $test/suite List? not [
+    "Test suite requires a quotation." puts abort
+  ] !?
+  "-- Running tests..." puts
+  try
+  (rescue) [
+    << "Test suite failed." puts abort
+  ]
+  length? 0 = not [
+    "Test suite left unexpected values on its stack." puts abort
+  ] !?
+  <<
+  "-- Test suite passed." puts
 ]

@@ -435,6 +435,7 @@ read_error:
 void load_intrinsics (skE *env)
 {
 	/* Meta */
+	skE_defNative(env, "abort",     &skI_abort);
 	skE_defNative(env, "!",         &skI_exec);
 	skE_defNative(env, "!?",        &skI_exec_if);
 	skE_defNative(env, "=",         &skI_eql);
