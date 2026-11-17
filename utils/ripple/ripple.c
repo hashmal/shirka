@@ -12,80 +12,142 @@ struct ripple ripple;
 volatile sig_atomic_t ripple_interrupt;
 volatile sig_atomic_t ripple_stop;
 
-void ripple_evaluate (int file)
+/* Validate before consuming the controller's character list. */
+static char *text_pop (skE *env)
+{
+	skO *text = skE_stackPeek(env, 0);
+	skO *node;
+	char *buffer;
+	size_t length = 0;
+
+	skE_checkType(env, text, SKO_LIST);
+	for (node = text->data.list; node; node = node->next) {
+		skE_checkType(env, node, SKO_CHARACTER);
+		if (!node->data.character || length == RIPPLE_INPUT_LIMIT)
+			skE_error(env, "ripple: text contains NUL or exceeds 1 MiB");
+		length++;
+	}
+	buffer = malloc(length + 1);
+	if (!buffer)
+		skE_error(env, "ripple: could not allocate text");
+	length = 0;
+	for (node = text->data.list; node; node = node->next)
+		buffer[length++] = node->data.character;
+	buffer[length] = 0;
+	skO_free(skE_stackPop(env));
+	return buffer;
+}
+
+static skO *text_new (const char *text)
+{
+	skO *list = skO_list_new();
+	skO **tail = &list->data.list;
+
+	while (text && *text) {
+		*tail = skO_character_new(*text++);
+		tail = &(*tail)->next;
+	}
+	return list;
+}
+
+/* Own list, or load path; recover on the actual session stack, never try's. */
+static int evaluate (skO *list, char *path)
 {
 	skE *env = ripple.session;
-	skO *list;
-	skO *boundary;
 
 	if (ripple_stop || ripple_interrupt) {
+		if (list)
+			skO_free(list);
 		ripple_interrupt = 0;
-		return;
+		return 0;
 	}
 	if (setjmp(env->jmp)) {
 		skE_unwind(env, ripple.scope);
-		ripple.failed = 1;
 		ripple_interrupt = 0;
-		return;
+		return 0;
 	}
-	if (file) {
-		char *path = ripple.source + 5;
-		while (*path == ' ' || *path == '\t')
-			path++;
-		if (!*path)
-			skE_error(env, "Usage: /load PATH");
+	if (path)
 		list = skO_loadParse(env, path);
-	} else {
-		list = ripple.pending;
-		ripple.pending = NULL;
-	}
-	/* Returning to the host is a real continuation. Without it, the existing
-	 * tail-call rule could install a callee's temporary reserves in the session. */
-	boundary = skO_list_new();
-	sk_list_append(list, boundary);
-	/* The root submission deliberately has no temporary scope. */
+	/* A real continuation prevents a final callee from inheriting session scope.
+	 * This private literal cannot be replaced by a user-defined operation. */
+	sk_list_append(list, skO_list_new());
 	skE_execList(env, list, 0);
-	/* The private literal executes last; it is not name-resolved user code. */
 	skO_free(skE_stackPop(env));
 	ripple_interrupt = 0;
+	return 1;
 }
 
-static skO *ripple_read_op (skE *env)
+/* continuation? -- text :line|:cancel|:eof|:invalid|:error */
+static skO *read_line (skE *env)
 {
-	skE_stackPush(env, skO_boolean_new(ripple.running && !ripple_stop && ripple_read()));
+	skO *continuation = skE_stackPeek(env, 0);
+	enum ripple_input status;
+	char *text;
+	const char *names[] = {"line", "cancel", "eof", "invalid", "error"};
+
+	skE_checkType(env, continuation, SKO_BOOLEAN);
+	text = ripple_read_line(continuation->data.boolean, &status);
+	skO_free(skE_stackPop(env));
+	skE_stackPush(env, text_new(text));
+	free(text);
+	skE_stackPush(env, skO_quoted_symbol_new((char *)names[status]));
 	return NULL;
 }
 
-static skO *ripple_command (skE *env)
+/* text -- instructions :ready|:more|:invalid */
+static skO *parse (skE *env)
 {
-	const char *command = ripple_command_name(ripple.source);
+	char *text = text_pop(env);
+	skO *list;
+	int status = skO_read(text, &list);
 
-	skE_stackPush(env, skO_quoted_symbol_new((char *)command));
+	free(text);
+	skE_stackPush(env, list ? list : skO_list_new());
+	skE_stackPush(env, skO_quoted_symbol_new(status == SK_PARSE_OK ? "ready" :
+		status == SK_PARSE_MORE ? "more" : "invalid"));
 	return NULL;
 }
 
-static skO *ripple_eval (skE *env)
+/* instructions -- success? */
+static skO *execute (skE *env)
 {
-	(void)env;
-	ripple_evaluate(0);
+	skE_checkType(env, skE_stackPeek(env, 0), SKO_LIST);
+	skE_stackPush(env, skO_boolean_new(evaluate(skE_stackPop(env), NULL)));
 	return NULL;
 }
 
-static skO *ripple_load (skE *env)
+/* path -- success? */
+static skO *load_file (skE *env)
 {
-	(void)env;
-	ripple_evaluate(1);
+	char *path = text_pop(env);
+	int success = evaluate(NULL, path);
+
+	free(path);
+	skE_stackPush(env, skO_boolean_new(success));
 	return NULL;
 }
 
-static skO *ripple_stack_op (skE *env)
+/* -- descriptions omitted?; bounded text, never copies of session values. */
+static skO *stack_view (skE *env)
 {
-	(void)env;
-	ripple_stack();
+	skO *node = ripple.session->stack;
+	skO *list = skO_list_new();
+	skO **tail = &list->data.list;
+	char value[512];
+	size_t count = 0;
+
+	while (node && count++ < 256) {
+		skO_inspect(node, value, sizeof(value), 6);
+		*tail = text_new(value);
+		tail = &(*tail)->next;
+		node = node->next;
+	}
+	skE_stackPush(env, list);
+	skE_stackPush(env, skO_boolean_new(node != NULL));
 	return NULL;
 }
 
-static skO *ripple_clear (skE *env)
+static skO *clear_stack (skE *env)
 {
 	(void)env;
 	while (ripple.session->stack)
@@ -93,10 +155,13 @@ static skO *ripple_clear (skE *env)
 	return NULL;
 }
 
-static skO *ripple_stop_op (skE *env)
+/* text -- ; storage is native, deciding what to remember is self-hosted. */
+static skO *remember (skE *env)
 {
-	(void)env;
-	ripple.running = 0;
+	char *text = text_pop(env);
+
+	ripple_history(text);
+	free(text);
 	return NULL;
 }
 
@@ -110,7 +175,6 @@ int main (int argc, char **argv)
 		fprintf(stderr, "Usage: ripple (or pipe Shirka input into ripple)\n");
 		return EXIT_FAILURE;
 	}
-	ripple.running = 1;
 	ripple.session = skE_new();
 	skE_init(ripple.session);
 	control = skE_new();
@@ -128,21 +192,22 @@ int main (int argc, char **argv)
 			ripple.scope = ripple.session->scope;
 			ripple.session->interrupt = &ripple_interrupt;
 			ripple_terminal_init();
-			skE_defNative(control, "ripple/read", ripple_read_op);
-			skE_defNative(control, "ripple/command", ripple_command);
-			skE_defNative(control, "ripple/eval", ripple_eval);
-			skE_defNative(control, "ripple/load", ripple_load);
-			skE_defNative(control, "ripple/stack", ripple_stack_op);
-			skE_defNative(control, "ripple/clear", ripple_clear);
-			skE_defNative(control, "ripple/stop", ripple_stop_op);
+			skE_defNative(control, "ripple/read-line", read_line);
+			skE_defNative(control, "ripple/parse", parse);
+			skE_defNative(control, "ripple/execute", execute);
+			skE_defNative(control, "ripple/load-file", load_file);
+			skE_defNative(control, "ripple/stack-view", stack_view);
+			skE_defNative(control, "ripple/clear-stack", clear_stack);
+			skE_defNative(control, "ripple/history", remember);
 			skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/utils/ripple/ripple.shk"), 0);
+			/* The controller leaves its accumulated success flag on top. */
+			skE_checkType(control, skE_stackPeek(control, 0), SKO_BOOLEAN);
+			if (!ripple.interactive && !control->stack->data.boolean)
+				status = EXIT_FAILURE;
 		}
 	}
 	ripple_terminal_free();
-	if (ripple.pending)
-		skO_free(ripple.pending);
-	free(ripple.source);
 	skE_free(control);
 	skE_free(ripple.session);
-	return status || (!ripple.interactive && ripple.failed) ? EXIT_FAILURE : EXIT_SUCCESS;
+	return status;
 }

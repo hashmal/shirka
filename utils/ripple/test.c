@@ -198,6 +198,20 @@ int main (void)
 	start(0, "[\n");
 	expect("incomplete input at EOF");
 	finish(1);
+	/* Commands are whole primary inputs, not tokens inside submitted code. */
+	start(0, "\"/exit\" puts\n-- /exit\n[\n/exit\n]\n/stack\n/clear\n"
+		"[8] => /help\n/help puts\n(puts)\n9\n/load\t\n"
+		"/load test/fixtures/absent.shk\n/load test/fixtures/malformed.shk\n"
+		"77 -> survived abort\nsurvived puts\n/exit\n999 puts\n");
+	expect("77");
+	assert(strstr(output, "Symbol(/exit)") && strstr(output, "8\n9\n"));
+	assert(strstr(output, "Usage: /load PATH") && !strstr(output, "999"));
+	finish(1);
+	start(0, "[1] 300 times\n/stack\n/clear\n/stack\n");
+	expect("(empty stack)");
+	assert(strstr(output, "255: 1") && !strstr(output, "256: 1"));
+	assert(strstr(output, "additional stack values omitted"));
+	finish(0);
 
 snprintf(load_path, sizeof(load_path), "%s/load data.shk", state_path);
 	file = fopen(load_path, "w"); assert(file);

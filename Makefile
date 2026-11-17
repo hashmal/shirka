@@ -53,11 +53,30 @@ utils/ripple/ripple: utils/ripple/ripple.c utils/ripple/terminal.c utils/ripple/
 		-o $@ utils/ripple/ripple.c utils/ripple/terminal.c \
 		env.o objects.o parser.o $(RIPPLE_LIBS)
 
-.PHONY: test-ripple
-test-ripple: ripple
+.PHONY: test-ripple test-ripple-reclamation
+test-ripple: ripple test-ripple-reclamation
 	@set -e; \
 	build_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$build_dir"' 0; \
 	$(CC) $(CFLAGS) -I. utils/ripple/test.c env.o objects.o parser.o \
 		-lm -lutil -o "$$build_dir/test"; \
 	"$$build_dir/test"
+
+# Use the real controller and host with a deterministic terminal substitute.
+test-ripple-reclamation:
+	@set -e; \
+	build_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$build_dir"' 0; \
+	for source in env objects parser; do \
+		$(CC) $(CFLAGS) -I. -include test/reclamation.h \
+			-Dmalloc=sk_test_alloc -Dfree=sk_test_free \
+			-c $$source.c -o "$$build_dir/$$source.o"; \
+	done; \
+	$(CC) $(CFLAGS) -Dmain=ripple_main -DRIPPLE_HOME='"$(CURDIR)"' \
+		-c utils/ripple/ripple.c -o "$$build_dir/ripple.o"; \
+	$(CC) $(CFLAGS) -I. utils/ripple/reclamation.c "$$build_dir/"*.o \
+		-lm -o "$$build_dir/test"; \
+	if ! "$$build_dir/test" > "$$build_dir/result" 2>&1; then \
+		cat "$$build_dir/result"; exit 1; \
+	fi; \
+	tail -n 1 "$$build_dir/result"

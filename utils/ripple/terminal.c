@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -149,44 +148,44 @@ void ripple_prompt (char *buffer, size_t size)
 	snprintf(buffer + used, size - used, "> ");
 }
 
-void ripple_stack (void)
+void ripple_history (const char *text)
 {
-	skO *node = ripple.session->stack;
-	char value[512];
-	size_t index = 0;
+	char stamp[32];
 
-	if (!node)
-		puts("(empty stack)");
-	while (node && index < 256) {
-		skO_inspect(node, value, sizeof(value), 6);
-		printf("%zu: %s\n", index++, value);
-		node = node->next;
+	if (ripple.interactive && *text && strlen(text) <= 8192) {
+		add_history(text);
+		snprintf(stamp, sizeof(stamp), "#%ld", (long)time(NULL));
+		add_history_time(stamp);
 	}
-	if (node)
-		puts("... additional stack values omitted");
 }
 
-/* Read bounded stream lines without invoking terminal editing or history. */
-static char *stream_line (void)
+/* Consume an overlong physical line, but never silently truncate it. */
+static char *stream_line (enum ripple_input *status)
 {
 	char *line = malloc(RIPPLE_INPUT_LIMIT + 1);
 	size_t length = 0;
 	int c;
+	int overflow = 0;
 
 	if (!line) {
 		fprintf(stderr, "ripple: could not allocate input.\n");
-		ripple.failed = 1;
+		*status = RIPPLE_ERROR;
 		return NULL;
 	}
 	while ((c = fgetc(stdin)) != EOF && c != '\n') {
 		if (length < RIPPLE_INPUT_LIMIT)
 			line[length++] = c ? (char)c : 127;
+		else
+			overflow = 1;
 	}
-	if (c == EOF && ferror(stdin) && !ripple_interrupt) {
-		fprintf(stderr, "ripple: input read failed.\n");
-		ripple.failed = 1;
+	if (overflow || (c == EOF && ferror(stdin) && !ripple_interrupt)) {
+		fprintf(stderr, "ripple: input read failed or exceeds 1 MiB.\n");
+		*status = overflow ? RIPPLE_INVALID : RIPPLE_ERROR;
+		free(line);
+		return NULL;
 	}
 	if (c == EOF && !length) {
+		*status = RIPPLE_EOF;
 		free(line);
 		return NULL;
 	}
@@ -194,106 +193,47 @@ static char *stream_line (void)
 	return line;
 }
 
-/* The command vocabulary stays in ripple.shk; this only recognizes its lines. */
-const char *ripple_command_name (char *source)
-{
-	if (strchr(source, '\n'))
-		return "code";
-	if (!strcmp(source, "/help")) return "help";
-	if (!strcmp(source, "/exit")) return "exit";
-	if (!strcmp(source, "/stack")) return "stack";
-	if (!strcmp(source, "/clear")) return "clear";
-	if (!strcmp(source, "/load") || (!strncmp(source, "/load", 5) &&
-		isspace((unsigned char)source[5]))) return "load";
-	return "code";
-}
-
-int ripple_read (void)
+/* One editor interaction only; the Shirka controller owns pending input. */
+char *ripple_read_line (int continuation, enum ripple_input *status)
 {
 	char prompt[512];
 	char *line;
-	char *joined;
 	char *cursor;
-	size_t length;
-	size_t extra;
-	int status;
-	int invalid;
 
-	free(ripple.source);
-	ripple.source = NULL;
-	if (ripple.pending) {
-		skO_free(ripple.pending);
-		ripple.pending = NULL;
-	}
-	while (!ripple_stop) {
-		ripple_interrupt = 0;
-		length = ripple.source ? strlen(ripple.source) : 0;
-		if (length)
-			strcpy(prompt, "... ");
-		else
-			ripple_prompt(prompt, sizeof(prompt));
-		line = ripple.interactive ? readline(prompt) : stream_line();
-		if (ripple_interrupt) {
-			free(line);
-			free(ripple.source);
-			ripple.source = NULL;
-			clearerr(stdin);
-			if (ripple.interactive)
-				putchar('\n');
-			continue;
-		}
-		if (!line) {
-			if (length) {
-				fprintf(stderr, "ripple: incomplete input at EOF.\n");
-				ripple.failed = 1;
-			}
-			return 0;
-		}
-		extra = strlen(line);
-		invalid = 0;
-		for (cursor = line; *cursor; cursor++)
-			if (((unsigned char)*cursor < 32 && *cursor != '\n' && *cursor != '\t') ||
-				(unsigned char)*cursor == 127)
-				invalid = 1;
-		if (invalid || length + extra + 2 > RIPPLE_INPUT_LIMIT) {
-			fprintf(stderr, "ripple: input contains control bytes or exceeds 1 MiB.\n");
-			free(line);
-			free(ripple.source);
-			ripple.source = NULL;
-			ripple.failed = 1;
-			continue;
-		}
-		joined = realloc(ripple.source, length + extra + 2);
-		if (!joined) {
-			free(line);
-			fprintf(stderr, "ripple: could not allocate input.\n");
-			ripple.failed = 1;
-			return 0;
-		}
-		ripple.source = joined;
-		if (length)
-			ripple.source[length++] = '\n';
-		memcpy(joined + length, line, extra + 1);
+	*status = RIPPLE_EOF;
+	if (ripple_stop)
+		return NULL;
+	ripple_interrupt = 0;
+	if (continuation)
+		strcpy(prompt, "... ");
+	else
+		ripple_prompt(prompt, sizeof(prompt));
+	*status = RIPPLE_LINE;
+	line = ripple.interactive ? readline(prompt) : stream_line(status);
+	if (ripple_interrupt) {
 		free(line);
-		if (!strcmp(ripple_command_name(joined), "code"))
-			status = skO_read(joined, &ripple.pending);
-		else
-			status = SK_PARSE_OK;
-		if (status == SK_PARSE_MORE)
-			continue;
-		if (status == SK_PARSE_ERROR) {
-			ripple.failed = 1;
-			free(ripple.source);
-			ripple.source = NULL;
-			continue;
-		}
-		if (ripple.interactive && *joined && strlen(joined) <= 8192) {
-			char stamp[32];
-			add_history(joined);
-			snprintf(stamp, sizeof(stamp), "#%ld", (long)time(NULL));
-			add_history_time(stamp);
-		}
-		return 1;
+		clearerr(stdin);
+		if (ripple.interactive)
+			putchar('\n');
+		*status = ripple_stop ? RIPPLE_EOF : RIPPLE_CANCEL;
+		ripple_interrupt = 0;
+		return NULL;
 	}
-	return 0;
+	if (!line) {
+		if (*status == RIPPLE_LINE)
+			*status = RIPPLE_EOF;
+		return NULL;
+	}
+	for (cursor = line; *cursor; cursor++) {
+		if (((unsigned char)*cursor < 32 && *cursor != '\n' && *cursor != '\t') ||
+			(unsigned char)*cursor == 127)
+			break;
+	}
+	if (*cursor || strlen(line) > RIPPLE_INPUT_LIMIT) {
+		fprintf(stderr, "ripple: input contains control bytes or exceeds 1 MiB.\n");
+		free(line);
+		*status = RIPPLE_INVALID;
+		return NULL;
+	}
+	return line;
 }

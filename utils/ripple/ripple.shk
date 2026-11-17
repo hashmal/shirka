@@ -1,5 +1,5 @@
--- ripple's control stack is separate from the persistent user stack.
--- Native bridges inspect or evaluate that session without transferring it here.
+-- The controller has its own stack; native session operations never borrow it.
+-- Each step carries: pending source, success-so-far, continue?
 
 (=> ripple/help) [
   "/help       show this help" puts
@@ -12,14 +12,162 @@
   "Ctrl-C cancels input or interrupts between interpreter steps." puts
 ]
 
-(=> ripple/step) [
-  ripple/command -> command
-  command :help = [ ripple/help ] !?
-  command :exit = [ ripple/stop ] !?
-  command :stack = [ ripple/stack ] !?
-  command :clear = [ ripple/clear ] !?
-  command :load = [ ripple/load ] !?
-  command :code = [ ripple/eval ] !?
-]
+(=> ripple/nonempty?)
+-- List -- Boolean; unlike length?, consume the list.
+  [ length? 0 > >< << ]
 
-([ripple/read] while) [ ripple/step ]
+(=> ripple/space?)
+-- Character -- Boolean
+  [ >> '\s = >< '\t = or ]
+
+(=> ripple/word)
+-- Text -- Remainder Word; split once on a space or tab.
+  [ [] >< TRUE
+    ([] while) [
+      length? 0 =
+      (if) [
+        [ FALSE ]
+        [ uncons -> c
+          c ripple/space?
+          (if) [
+            [ FALSE ]
+            [ >< c cons >< TRUE ]
+          ]
+        ]
+      ]
+    ]
+    >< reverse ]
+
+(=> ripple/trim)
+-- Text -- Text; trim leading spaces/tabs, preserving the rest of a path.
+  [ TRUE
+    ([] while) [
+      length? 0 =
+      (if) [
+        [ FALSE ]
+        [ uncons -> c
+          c ripple/space?
+          (if) [ [ TRUE ] [ c cons FALSE ] ]
+        ]
+      ]
+    ] ]
+
+(=> ripple/command)
+-- Text -- Argument Command; commands occupy a complete, single-line input.
+  [ -> text
+    -- Ordinary code needs no command scan. Inspect only its first character.
+    text ripple/nonempty?
+    (if) [
+      [ text uncons >< << '/ = ]
+      [ FALSE ]
+    ]
+    (if) [
+      [ text '\n included? >< <<
+        (if) [
+          [ text :code ]
+          [ text ripple/word -> word -> path
+            word "/load" =
+            (if) [
+              [ path ripple/trim :load ]
+              [ text "/help" =
+                (if) [ [ [] :help ] [
+                  text "/exit" =
+                  (if) [ [ [] :exit ] [
+                    text "/stack" =
+                    (if) [ [ [] :stack ] [
+                      text "/clear" =
+                      (if) [ [ [] :clear ] [ text :code ] ]
+                    ] ]
+                  ] ]
+                ] ]
+              ]
+            ]
+          ]
+        ]
+      ]
+      [ text :code ]
+    ] ]
+
+(=> ripple/dispatch)
+-- Argument Command -- Success? Continue?
+  [ -> command -> argument
+    command :help =  [ ripple/help TRUE TRUE ] !?
+    command :exit =  [ TRUE FALSE ] !?
+    command :stack = [ ripple/stack TRUE TRUE ] !?
+    command :clear = [ ripple/clear-stack TRUE TRUE ] !?
+    command :load = (!?) [
+      argument ripple/nonempty?
+      (if) [
+        [ argument ripple/load-file TRUE ]
+        [ "Usage: /load PATH" puts FALSE TRUE ]
+      ]
+    ] ]
+
+(=> ripple/stack)
+-- Inspection returns descriptions, not the session values themselves.
+  [ ripple/stack-view -> omitted
+    length? 0 = [ "(empty stack)" puts ] !?
+    0 ><
+    (each) [ -> value >> print ": " print <- value puts 1 + ]
+    <<
+    omitted [ "... additional stack values omitted" puts ] !? ]
+
+(=> ripple/parse-and-run)
+-- Text Success-so-far -- Pending-text Success-so-far Continue?
+  [ -> ok -> text
+    text ripple/parse -> status
+    status :more = [ << text ok TRUE ] !?
+    status :invalid = [ << [] FALSE TRUE ] !?
+    status :ready = (!?) [
+      text ripple/history
+      ripple/execute ok and
+      [] >< TRUE
+    ] ]
+
+(=> ripple/submit)
+-- Bound accumulated multiline input before asking the native parser to read it.
+  [ -> ok
+    length? 1048576 >
+    (if) [
+      [ << "ripple: input exceeds 1 MiB." puts [] FALSE TRUE ]
+      [ ok ripple/parse-and-run ]
+    ] ]
+
+(=> ripple/process)
+-- Text Success-so-far -- Pending-text Success-so-far Continue?
+  [ -> ok -> text
+    text ripple/command -> command -> argument
+    command :code =
+    (if) [
+      [ argument ok ripple/submit ]
+      [ text ripple/history
+        argument command ripple/dispatch -> continue
+        ok and [] >< <- continue
+      ]
+    ] ]
+
+(=> ripple/step)
+-- Pending-text Success-so-far -- Pending-text Success-so-far Continue?
+  [ -> ok -> source
+    source ripple/nonempty? ripple/read-line -> status -> line
+    status :line = (!?) [
+      source ripple/nonempty?
+      (if) [
+        [ source "\n" ++ line ++ ok ripple/submit ]
+        [ line ok ripple/process ]
+      ]
+    ]
+    status :cancel = [ [] ok TRUE ] !?
+    status :invalid = [ [] FALSE TRUE ] !?
+    status :error = [ [] FALSE FALSE ] !?
+    status :eof = (!?) [
+      source ripple/nonempty?
+      (if) [
+        [ "ripple: incomplete input at EOF." puts [] FALSE FALSE ]
+        [ [] ok FALSE ]
+      ]
+    ] ]
+
+"" TRUE TRUE
+([] while) [ ripple/step ]
+-- EOF or /exit leaves pending text and the accumulated success flag.

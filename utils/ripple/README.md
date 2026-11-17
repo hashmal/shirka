@@ -1,8 +1,41 @@
 # ripple
 
-A persistent Shirka REPL. The loop, command dispatch, help, and orchestration
-live in `ripple.shk`; the C host supplies terminal input and safe access to a
-separate user session. The original `examples/repl.shk` remains available.
+A persistent Shirka REPL. The loop, multiline assembly, command recognition and
+dispatch, history decisions, error policy, help, and stack presentation live in
+`ripple.shk`. The C host supplies terminal input and safe access to a separate
+user session. The original `examples/repl.shk` remains available.
+
+## Implementation boundary
+
+The controller carries pending source, accumulated success, and a loop condition
+on its own stack. Native code has no hidden current submission or command name.
+`ripple/command`, `ripple/submit`, `ripple/step`, and `ripple/stack` are ordinary
+Shirka operations. `/exit` produces the false loop condition; it needs no native
+stop operation. Adding a command requires editing only `ripple.shk`.
+
+Seven private intrinsics are available to the controller:
+
+| Intrinsic | Stack effect | Native responsibility |
+| --- | --- | --- |
+| `ripple/read-line` | `continuation? -- text status` | One editor/stream read; status is `:line`, `:cancel`, `:eof`, `:invalid`, or `:error` (unrecoverable input failure). |
+| `ripple/parse` | `text -- instructions status` | Actual parser; `:ready`, `:more`, or `:invalid`. Non-ready results carry an empty instruction list. |
+| `ripple/execute` | `instructions -- success?` | Consume instructions and execute on the persistent user stack, catching errors and unwinding unfinished calls. |
+| `ripple/load-file` | `path -- success?` | Load, parse, and execute a file in that same session, including recovery from load errors. |
+| `ripple/stack-view` | `-- descriptions omitted?` | Bounded character-list descriptions, top first; no session values are copied or consumed. |
+| `ripple/clear-stack` | `--` | Destroy session stack values safely. |
+| `ripple/history` | `text --` | Store a completed submission through Readline; no-op in stream mode. |
+
+The controller chooses when to parse, continue reading, record history, evaluate,
+print, or stop. `ripple/stack` numbers and prints the returned descriptions using
+the self-hosted `each`. Native inspection and clearing remain necessary because
+the controller must not take ownership of the session stack. File loading and
+execution share one protected native evaluation path. Prompt inspection stays
+native so refreshing it never clones the user's values.
+
+Text assembly uses ordinary Shirka lists and the existing `++` operation. This
+preserves self-hosting at the cost of Shirka's existing copying and concatenation
+costs; large multiline submissions can be expensive. This does not introduce a
+second parser, changes to ownership semantics, or a new string representation.
 
 ## Build and launch
 
@@ -148,12 +181,20 @@ make test-reclamation
 ```
 
 Pipes, redirected output, and `TERM=dumb` use plain stream input: no prompts, ANSI
-editing, or history writes. Errors are reported on stderr, processing continues,
-and the final stream exit status is nonzero if any submission failed.
+editing, or history writes. Parser, evaluator, and native I/O diagnostics use
+stderr; controller messages (such as `/load` usage and incomplete EOF) use Shirka's
+normal `puts` on stdout. Processing continues after recoverable errors, and the
+final stream exit status is nonzero if any submission failed.
 
 `make test-ripple` uses C parser/inspection checks and Unix pseudo-terminals to
 exercise real editing, paste, history persistence, Ctrl-C cancellation and
 execution interruption, EOF, `/load`, and terminal restoration. The existing
 allocation-counter test also exercises 100 successful and failing submissions
-against one persistent environment. Native calls, parsing, and Readline internals
+against one persistent environment. `test-ripple` also runs
+`test-ripple-reclamation`: it drives the actual controller and host through 100
+cycles of successful, failing, and multiline submissions in each of two sessions,
+checking stable interpreter allocations and session scope/frame boundaries.
+Its terminal substitute makes those checks independent of Readline allocations.
+Expected error diagnostics are shown only if this regression fails.
+Native calls, parsing, and Readline internals
 are not promised to have bounded execution latency.
