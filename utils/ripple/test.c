@@ -154,6 +154,17 @@ static void unit_tests (void)
 	assert(skO_read("\"a\\\"[", &list) == SK_PARSE_MORE);
 	assert(skO_read("\"\\q", &list) == SK_PARSE_ERROR);
 	assert(skO_read("'", &list) == SK_PARSE_MORE);
+	assert(skO_read("'\\", &list) == SK_PARSE_MORE);
+	assert(skO_read("\"\\03", &list) == SK_PARSE_MORE);
+	assert(skO_read("'\\400", &list) == SK_PARSE_ERROR);
+	assert(skO_read("\"\\777\"", &list) == SK_PARSE_ERROR);
+	assert(skO_read("'\\0", &list) == SK_PARSE_OK);
+	assert(list->data.list->data.character == 0);
+	skO_free(list);
+	assert(skO_read("'\\0334", &list) == SK_PARSE_OK);
+	assert(list->data.list->data.character == 27);
+	assert(list->data.list->next->data.number == 4);
+	skO_free(list);
 value = skO_symbol_new("TRUE");
 	skO_inspect(value, text, sizeof(text), 3);
 	assert(!strcmp(text, "Symbol(TRUE)"));

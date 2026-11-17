@@ -17,6 +17,7 @@ clean:
 test: shirka test-harness
 	./shirka test/parser.shk
 	./shirka test/operations.shk
+	./shirka test/ansi.shk
 
 # Count allocations independently of the Shirka test framework.
 test-reclamation:

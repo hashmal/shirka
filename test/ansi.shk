@@ -1,0 +1,65 @@
+"lib/test.shk" with
+"lib/ansi.shk" with
+
+(test/run) [
+  -- Literal expected parameters are independent of ansi/table.
+  [
+    [:black "30" "39"] [:red "31" "39"] [:green "32" "39"]
+    [:yellow "33" "39"] [:blue "34" "39"] [:magenta "35" "39"]
+    [:cyan "36" "39"] [:white "37" "39"]
+    [:bg-black "40" "49"] [:bg-red "41" "49"] [:bg-green "42" "49"]
+    [:bg-yellow "43" "49"] [:bg-blue "44" "49"] [:bg-magenta "45" "49"]
+    [:bg-cyan "46" "49"] [:bg-white "47" "49"]
+    [:bright-black "90" "39"] [:bright-red "91" "39"] [:bright-green "92" "39"]
+    [:bright-yellow "93" "39"] [:bright-blue "94" "39"] [:bright-magenta "95" "39"]
+    [:bright-cyan "96" "39"] [:bright-white "97" "39"]
+    [:bg-bright-black "100" "49"] [:bg-bright-red "101" "49"]
+    [:bg-bright-green "102" "49"] [:bg-bright-yellow "103" "49"]
+    [:bg-bright-blue "104" "49"] [:bg-bright-magenta "105" "49"]
+    [:bg-bright-cyan "106" "49"] [:bg-bright-white "107" "49"]
+    [:bold "1" "22"] [:dim "2" "22;22"] [:italic "3" "23"]
+    [:underline "4" "24"] [:blink "5" "25"] [:reverse "7" "27"]
+    [:hidden "8" "28"] [:strikethrough "9" "29"] [:overline "53" "55"]
+  ]
+  (each) [
+    uncons -> t/name uncons -> t/on uncons -> t/off <<
+    [ "x" [] t/name cons ansi-style
+      "\033[" t/on ++ "mx\033[" ++ t/off ++ "m" ++ ] assert_equal
+  ]
+  [ "a\n\t b" [] ansi-style "a\n\t b" ] assert_equal
+  [ "" [:red] ansi-style "\033[31m\033[39m" ] assert_equal
+  [ "x" [:red :blue] ansi-style
+    "\033[31m\033[34mx\033[39m\033[31;31m\033[39m" ] assert_equal
+  [ "x" [:bold :bold] ansi-style
+    "\033[1m\033[1mx\033[22m\033[1;1m\033[22m" ] assert_equal
+  [ "A" "B" [:blue] ansi-style ++ "C" ++ [:red] ansi-style
+    "\033[31mA\033[34mB\033[39m\033[31;31mC\033[39m" ] assert_equal
+  [ "x" [:blue] ansi-style [:bg-red] ansi-style
+    "\033[41m\033[34mx\033[39m\033[49m" ] assert_equal
+  [ "A" "B" [:bold] ansi-style ++ "C" ++ [:dim] ansi-style
+    "\033[2mA\033[1mB\033[22m\033[2;2mC\033[22;22m" ] assert_equal
+  [ "A" "B" [:dim] ansi-style ++ "C" ++ [:bold] ansi-style
+    "\033[1mA\033[2mB\033[22;22m\033[1;1mC\033[22m" ] assert_equal
+  [ "x" [:italic] ansi-style [:italic] ansi-style
+    "\033[3m\033[3mx\033[23m\033[3;3m\033[23m" ] assert_equal
+  [ "x" [:red] ansi-style "y" [:blue] ansi-style ++ "z" ++
+    "\033[31mx\033[39m\033[34my\033[39mz" ] assert_equal
+  [ "a" "b" [:green] ansi-style ++ "c" ++ [:blue] ansi-style
+    "d" ++ [:red] ansi-style
+    "\033[31m\033[34ma\033[32mb\033[39m\033[34;34mc\033[39m\033[31;31md\033[39m" ] assert_equal
+  [ 17 "x" [:red] ansi-style << 17 ] assert_equal
+  [ 1 [] ansi-style ] assert_error
+  [ "x" 1 ansi-style ] assert_error
+  [ [1] [] ansi-style ] assert_error
+  [ [:x] [] ansi-style ] assert_error
+  [ "x" [1] ansi-style ] assert_error
+  [ "x" [:red 1] ansi-style ] assert_error
+  [ ['a 1] [:red] ansi-style ] assert_error
+  [ "x" [[]] ansi-style ] assert_error
+  [ "x" [TRUE] ansi-style ] assert_error
+  [ "x" [red] ansi-style ] assert_error
+  [ "x" [:unknown] ansi-style ] assert_error
+  [ "x" [:reset] ansi-style ] assert_error
+  [ "\033[0m" [:red] ansi-style ] assert_error
+  [ "\033[" [:red] ansi-style ] assert_error
+]

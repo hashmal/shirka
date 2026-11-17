@@ -66,6 +66,10 @@ static void exercise (void)
 	skE *env;
 
 	run("1 2 3 [4 [5]]", 1);
+	run("\"lib/prelude.shk\" with \"lib/ansi.shk\" with "
+		"\"a\" \"b\" [:bold :blue] ansi-style ++ [:dim :red] ansi-style", 1);
+	parse("'\\0334 \"\\0x\" '\\377", 1);
+	parse("'\\400", 0);
 	run("\"lib/prelude.shk\" with \"lib/test.shk\" with "
 		"[[1 1] assert_equal [abort] assert_error] test/run", 1);
 	run("\"lib/prelude.shk\" with \"lib/test.shk\" with "

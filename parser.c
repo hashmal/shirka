@@ -190,6 +190,21 @@ skO *parse_character (char **next, jmp_buf jmp)
 		c++;
 		if (*c == 0)
 			longjmp(jmp, SK_PARSE_MORE);
+		if (*c >= '0' && *c <= '7') {
+			unsigned int value = 0;
+			int digits = 0;
+
+			while (digits < 3 && *c >= '0' && *c <= '7') {
+				value = value * 8 + (unsigned int)(*c++ - '0');
+				digits++;
+			}
+			if (value > 255) {
+				fprintf(stderr, "PANIC! Octal escape exceeds one byte.\n");
+				longjmp(jmp, SK_PARSE_ERROR);
+			}
+			*next = c;
+			return skO_character_new((char)value);
+		}
 		switch (*c) {
 		case '\\':
 			result = '\\';

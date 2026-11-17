@@ -44,3 +44,20 @@
 --+---------------------------------+---------------------------+-------------
 
                                       ]
+
+(test/run) [
+  [ "'\\033" $parse ['\033] ] assert_equal
+  [ "'\\33" $parse ['\033] ] assert_equal
+  [ "'\\7" $parse ['\007] ] assert_equal
+  [ "'\\000" $parse ['\000] ] assert_equal
+  [ "'\\377" $parse ['\377] ] assert_equal
+  [ "'\\0334" $parse ['\033 4] ] assert_equal
+  [ "\"\\0334\"" $parse [[ '\033 '4 ]] ] assert_equal
+  [ "\"\\378\"" $parse [[ '\037 '8 ]] ] assert_equal
+  [ "\"\\0x\"" $parse [[ '\000 'x ]] ] assert_equal
+  [ "'\\400" $parse ] assert_error
+  [ "\"\\777\"" $parse ] assert_error
+  [ "'\\8" $parse ] assert_error
+  [ "'\\" $parse ] assert_error
+  [ "\"\\03" $parse ] assert_error
+]

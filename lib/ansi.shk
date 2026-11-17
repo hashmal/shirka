@@ -1,0 +1,157 @@
+-- Composable SGR strings. See lib/ansi.md for the reserved wire encoding.
+-- Rows: request, opening parameter, closing parameter, independent category.
+(=> ansi/table) [ [
+  [:black "30" "39" :fg]
+  [:bg-black "40" "49" :bg]
+  [:bright-black "90" "39" :fg]
+  [:bg-bright-black "100" "49" :bg]
+  [:red "31" "39" :fg]
+  [:bg-red "41" "49" :bg]
+  [:bright-red "91" "39" :fg]
+  [:bg-bright-red "101" "49" :bg]
+  [:green "32" "39" :fg]
+  [:bg-green "42" "49" :bg]
+  [:bright-green "92" "39" :fg]
+  [:bg-bright-green "102" "49" :bg]
+  [:yellow "33" "39" :fg]
+  [:bg-yellow "43" "49" :bg]
+  [:bright-yellow "93" "39" :fg]
+  [:bg-bright-yellow "103" "49" :bg]
+  [:blue "34" "39" :fg]
+  [:bg-blue "44" "49" :bg]
+  [:bright-blue "94" "39" :fg]
+  [:bg-bright-blue "104" "49" :bg]
+  [:magenta "35" "39" :fg]
+  [:bg-magenta "45" "49" :bg]
+  [:bright-magenta "95" "39" :fg]
+  [:bg-bright-magenta "105" "49" :bg]
+  [:cyan "36" "39" :fg]
+  [:bg-cyan "46" "49" :bg]
+  [:bright-cyan "96" "39" :fg]
+  [:bg-bright-cyan "106" "49" :bg]
+  [:white "37" "39" :fg]
+  [:bg-white "47" "49" :bg]
+  [:bright-white "97" "39" :fg]
+  [:bg-bright-white "107" "49" :bg]
+  [:bold "1" "22" :bold] [:dim "2" "22;22" :dim]
+  [:italic "3" "23" :italic] [:underline "4" "24" :underline]
+  [:blink "5" "25" :blink] [:reverse "7" "27" :reverse]
+  [:hidden "8" "28" :hidden] [:strikethrough "9" "29" :strike]
+  [:overline "53" "55" :overline]
+] ]
+
+(=> ansi/code) [ uncons << uncons >< << ]
+(=> ansi/reset) [ uncons << uncons << uncons >< << ]
+(=> ansi/category) [ uncons << uncons << uncons << uncons >< << ]
+(=> ansi/nonempty?) [ length? 0 > >< << ]
+(=> ansi/sgr) [ "\033[" >< ++ "m" ++ ]
+(=> ansi/check-string) [
+  List? not [abort] !?
+  (each) [ Character? not [abort] !? << ]
+]
+
+(=> ansi/request) [
+  QuotedSymbol? not [abort] !? -> a/request
+  [] ansi/table
+  (each) [ -> a/row
+    a/row uncons >< << a/request = [ << a/row ] !?
+  ]
+  length? 0 = [abort] !?
+]
+
+-- Decode only our canonical SGR vocabulary. Restoration tokens are redundant
+-- enables (e.g. 31;31); dim's close is 22;22, bold's close is 22.
+(=> ansi/token) [
+  -> a/token [] :invalid ansi/table
+  (each) [ -> a/entry
+    a/entry ansi/code -> a/code
+    a/token a/code = [ << << a/entry :open ] !?
+    a/token a/entry ansi/reset = [ << << a/entry :close ] !?
+    a/token a/code ";" ++ a/code ++ = [ << << a/entry :restore ] !?
+  ]
+  >> :invalid = [abort] !?
+]
+
+-- Read the parameter text after ESC; return remainder and parameter text.
+(=> ansi/read) [
+  length? 0 = [abort] !?
+  uncons '[ = not [abort] !?
+  "" >< TRUE
+  ([] while) [
+    length? 0 = [abort] !?
+    uncons -> a/char
+    a/char 'm =
+    (if) [ [ FALSE ] [ >< a/char cons >< TRUE ] ]
+  ]
+  >< reverse
+]
+
+-- Remove the newest opening of one category, preserving the other entries.
+(=> ansi/pop) [
+  -> a/remove -> a/active
+  [] FALSE a/active
+  (each) [ -> a/item -> a/found
+    a/item ansi/category a/remove = a/found not and
+    (if) [ [ TRUE ] [ a/item cons a/found ] ]
+  ]
+  not [abort] !? reverse
+]
+
+-- Find the effective opening of a category and encode it as a restoration.
+(=> ansi/restore) [
+  -> a/wanted -> a/styles
+  "" a/styles
+  (each) [ -> a/style
+    length? 0 = a/style ansi/category a/wanted = and
+    (!?) [ << a/style ansi/code >> ";" ++ >< ++ ansi/sgr ]
+  ]
+]
+
+-- Output Active Row Kind -- Output Active
+(=> ansi/transition) [
+  -> a/kind -> a/change -> a/state -> a/output
+  a/kind :open = (!?) [
+    a/output a/change ansi/code ansi/sgr ++
+    a/state a/change cons
+  ]
+  a/kind :restore = [ a/output a/state ] !?
+  a/kind :close = (!?) [
+    a/state a/change ansi/category ansi/pop -> a/remaining
+    a/output a/change ansi/reset ansi/sgr ++
+    a/change ansi/category -> a/category
+    a/category :bold = a/category :dim = or
+    (if) [
+      [ a/remaining :bold ansi/restore ++ a/remaining :dim ansi/restore ++ ]
+      [ a/remaining a/category ansi/restore ++ ]
+    ]
+    a/remaining
+  ]
+]
+
+(=> ansi-style)
+-- String Commands -- Styled-string. Helpers are implementation words.
+  [ List? not [abort] !? -> a/commands
+    >> ansi/check-string -> a/text
+    a/commands [ ansi/request ] map -> a/rows
+    a/rows ansi/nonempty?
+    (if) [
+      [ "" [] a/rows
+        (each) [ :open ansi/transition ]
+        -> a/outer -> a/prefix
+        a/prefix a/outer a/text
+        ([length? 0 >] while) [
+          uncons -> a/c
+          a/c '\033 =
+          (if) [
+            [ ansi/read -> a/parameters -> a/rest
+              a/parameters ansi/token ansi/transition a/rest ]
+            [ -> a/rest -> a/state a/c append a/state a/rest ]
+          ]
+        ]
+        <<
+        >> a/outer = not [abort] !?
+        a/rows reverse (each) [ :close ansi/transition ]
+        <<
+      ]
+      [ a/text ]
+    ] ]
