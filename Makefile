@@ -14,11 +14,23 @@ clean:
 	rm -f *.o
 	rm -f shirka utils/ripple/ripple
 
-test: shirka test-harness
+test: shirka test-harness test-hashmap
 	./shirka test/parser.shk
 	./shirka test/operations.shk
 	./shirka test/ansi.shk
 	./shirka test/ripple-highlight.shk
+
+.PHONY: test-hashmap
+test-hashmap: env.o objects.o parser.o
+	@set -e; \
+	build_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$build_dir"' 0; \
+	$(CC) $(CFLAGS) -I. -include test/hashmap-alloc.h \
+		-Dmalloc=skH_test_alloc -Dfree=skH_test_free \
+		-c hashmap.c -o "$$build_dir/hashmap.o"; \
+	$(CC) $(CFLAGS) -I. test/hashmap.c "$$build_dir/hashmap.o" \
+		env.o objects.o parser.o -lm -o "$$build_dir/test"; \
+	"$$build_dir/test"
 
 # Count allocations independently of the Shirka test framework.
 test-reclamation:

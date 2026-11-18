@@ -1,0 +1,39 @@
+#ifndef HASHMAP_H
+#define HASHMAP_H
+
+#include "shirka.h"
+
+typedef struct skH skH;
+
+typedef enum {
+	SKH_VALUE,
+	SKH_OPERATION
+} skH_kind;
+
+typedef struct {
+	symbol *key;
+	skO *value;
+	skH_kind kind;
+} skH_binding;
+
+/* The optional ancestor is borrowed, immutable, and must outlive this map.
+ * Allocation failure returns NULL. Freeing NULL is allowed. */
+skH *skH_new (skH *ancestor);
+void skH_free (skH *map);
+
+/* Install/replace a local binding. Success transfers ownership of a detached
+ * value (next == NULL); failure returns 0 and leaves ownership with the caller.
+ * Keys are borrowed interned symbols. No copying or execution happens here. */
+int skH_set (skH *map, symbol *key, skO *value, skH_kind kind);
+
+/* Borrowed bindings: stable across growth, invalidated by replacement, take,
+ * or destruction of their owning map. NULL means absent. get searches ancestors;
+ * getLocal and take operate only on the specified map. */
+const skH_binding *skH_get (const skH *map, const symbol *key);
+const skH_binding *skH_getLocal (const skH *map, const symbol *key);
+
+/* Remove a local binding and return its owned value, or NULL if absent.
+ * If supplied, kind receives the binding mode on success only. */
+skO *skH_take (skH *map, const symbol *key, skH_kind *kind);
+
+#endif
