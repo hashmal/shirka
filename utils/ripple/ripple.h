@@ -17,6 +17,7 @@ struct ripple {
 	skE *session;
 	context *scope;
 	int interactive;
+	int color;
 };
 
 extern struct ripple ripple;
@@ -25,8 +26,7 @@ extern volatile sig_atomic_t ripple_stop;
 
 void ripple_terminal_init (void);
 void ripple_terminal_free (void);
-char *ripple_read_line (int continuation, enum ripple_input *status);
+char *ripple_read_line (const char *prompt, enum ripple_input *status);
 void ripple_history (const char *text);
-void ripple_prompt (char *buffer, size_t size);
 
 #endif

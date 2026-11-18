@@ -107,7 +107,7 @@
   ]
 ]
 
--- Output Active Row Kind -- Output Active
+-- Output Active Row Kind .. Output Active
 (=> ansi/transition) [
   -> a/kind -> a/change -> a/state -> a/output
   a/kind :open = (!?) [
@@ -128,30 +128,32 @@
   ]
 ]
 
-(=> ansi-style)
--- String Commands -- Styled-string. Helpers are implementation words.
-  [ List? not [abort] !? -> a/commands
-    >> ansi/check-string -> a/text
-    a/commands [ ansi/request ] map -> a/rows
-    a/rows ansi/nonempty?
-    (if) [
-      [ "" [] a/rows
-        (each) [ :open ansi/transition ]
-        -> a/outer -> a/prefix
-        a/prefix a/outer a/text
-        ([length? 0 >] while) [
-          uncons -> a/c
-          a/c '\033 =
-          (if) [
-            [ ansi/read -> a/parameters -> a/rest
-              a/parameters ansi/token ansi/transition a/rest ]
-            [ -> a/rest -> a/state a/c append a/state a/rest ]
-          ]
+-- String Commands .. Styled-string.
+-- Helpers are implementation words.
+(=> ansi-style) [
+  List? not [abort] !? -> a/commands
+  >> ansi/check-string -> a/text
+  a/commands [ ansi/request ] map -> a/rows
+  a/rows ansi/nonempty?
+  (if) [
+    [ "" [] a/rows
+      (each) [ :open ansi/transition ]
+      -> a/outer -> a/prefix
+      a/prefix a/outer a/text
+      ([length? 0 >] while) [
+        uncons -> a/c
+        a/c '\033 =
+        (if) [
+          [ ansi/read -> a/parameters -> a/rest
+            a/parameters ansi/token ansi/transition a/rest ]
+          [ -> a/rest -> a/state a/c append a/state a/rest ]
         ]
-        <<
-        >> a/outer = not [abort] !?
-        a/rows reverse (each) [ :close ansi/transition ]
-        <<
       ]
-      [ a/text ]
-    ] ]
+      <<
+      >> a/outer = not [abort] !?
+      a/rows reverse (each) [ :close ansi/transition ]
+      <<
+    ]
+    [ a/text ]
+  ]
+]

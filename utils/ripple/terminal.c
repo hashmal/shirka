@@ -88,6 +88,7 @@ void ripple_terminal_init (void)
 
 	ripple.interactive = isatty(STDIN_FILENO) && isatty(STDOUT_FILENO) &&
 		getenv("TERM") && strcmp(getenv("TERM"), "dumb");
+	ripple.color = ripple.interactive && !getenv("NO_COLOR");
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = signal_handler;
 	sigemptyset(&action.sa_mask);
@@ -120,32 +121,6 @@ void ripple_terminal_free (void)
 	}
 	free(history_path);
 	history_path = NULL;
-}
-
-void ripple_prompt (char *buffer, size_t size)
-{
-	skO *values[3];
-	skO *node = ripple.session->stack;
-	char value[128];
-	size_t used = 0;
-	int count = 0;
-	int written;
-
-	if (!size)
-		return;
-	buffer[0] = 0;
-	while (node && count < 3) {
-		values[count++] = node;
-		node = node->next;
-	}
-	while (count) {
-		skO_inspect(values[--count], value, sizeof(value), 3);
-		written = snprintf(buffer + used, size - used, "%s ", value);
-		if (written < 0 || (size_t)written >= size - used)
-			return;
-		used += (size_t)written;
-	}
-	snprintf(buffer + used, size - used, "> ");
 }
 
 void ripple_history (const char *text)
@@ -194,9 +169,12 @@ static char *stream_line (enum ripple_input *status)
 }
 
 /* One editor interaction only; the Shirka controller owns pending input. */
-char *ripple_read_line (int continuation, enum ripple_input *status)
+char *ripple_read_line (const char *prompt, enum ripple_input *status)
 {
-	char prompt[512];
+	char *marked;
+	char *destination;
+	const char *source;
+	const char *end;
 	char *line;
 	char *cursor;
 
@@ -204,12 +182,33 @@ char *ripple_read_line (int continuation, enum ripple_input *status)
 	if (ripple_stop)
 		return NULL;
 	ripple_interrupt = 0;
-	if (continuation)
-		strcpy(prompt, "... ");
-	else
-		ripple_prompt(prompt, sizeof(prompt));
+	/* Readline must exclude SGR bytes when measuring prompt columns. */
+	marked = malloc(strlen(prompt) * 3 + 1);
+	if (!marked) {
+		fprintf(stderr, "ripple: could not allocate prompt.\n");
+		*status = RIPPLE_ERROR;
+		return NULL;
+	}
+	destination = marked;
+	for (source = prompt; *source;) {
+		end = source;
+		if (source[0] == 27 && source[1] == '[') {
+			end = source + 2;
+			while ((*end >= '0' && *end <= '9') || *end == ';')
+				end++;
+			if (*end == 'm') {
+				*destination++ = RL_PROMPT_START_IGNORE;
+				do { *destination++ = *source++; } while (source <= end);
+				*destination++ = RL_PROMPT_END_IGNORE;
+				continue;
+			}
+		}
+		*destination++ = *source++;
+	}
+	*destination = 0;
 	*status = RIPPLE_LINE;
-	line = ripple.interactive ? readline(prompt) : stream_line(status);
+	line = ripple.interactive ? readline(marked) : stream_line(status);
+	free(marked);
 	if (ripple_interrupt) {
 		free(line);
 		clearerr(stdin);

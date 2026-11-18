@@ -252,10 +252,3 @@
           [ [ [] cons ]
             [ uncons v cons cons ] ] ]
     reverse (map) [ reverse ] ]
-
-------------------------------------------------------------------------------
-(=> snd-fst)
-  [ uncons -> fst
-    uncons -> snd
-    length? 0 = not (!?) [ fail ]
-    << snd fst ]

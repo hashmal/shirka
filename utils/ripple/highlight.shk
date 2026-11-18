@@ -1,0 +1,110 @@
+-- Highlight bounded skO_inspect descriptions, not executable source.
+-- Truncated strings/tokens are expected and never reparsed or executed.
+(=> ripple/delimiter?) [
+  -> h/c h/c '\s = h/c '[ = or h/c '] = or
+]
+
+(=> ripple/chars)
+-- Text Count -- Remainder Prefix; stop safely at a truncated description.
+  [ -> h/n [] ><
+    (h/n times) [
+      length? 0 > [ uncons -> h/c >< h/c cons >< ] !?
+    ]
+    >< reverse ]
+
+(=> ripple/string-span)
+-- Text after the opening quote -- Remainder Quoted-span
+  [ ['"] >< FALSE TRUE
+    ([] while) [
+      -> h/escaped
+      length? 0 =
+      (if) [
+        [ FALSE FALSE ]
+        [ uncons -> h/c -> h/rest
+          h/c cons h/rest
+          h/c '\\ = h/escaped not and
+          h/c '" = h/escaped not and not
+        ]
+      ]
+    ]
+    << >< reverse ]
+
+(=> ripple/character-span)
+-- Text after apostrophe -- Remainder Character-span
+  [ 1 ripple/chars -> h/head -> h/rest
+    h/head "\\" =
+    (if) [
+      [ h/rest 1 ripple/chars -> h/escape
+        h/escape "x" =
+        (if) [
+          [ 2 ripple/chars "'\\x" >< ++ ]
+          [ "'\\" h/escape ++ ]
+        ]
+      ]
+      [ h/rest "'" h/head ++ ]
+    ] ]
+
+(=> ripple/word-span)
+-- Text -- Remainder Token; brackets remain separate spans.
+  [ [] >< TRUE
+    ([] while) [
+      length? 0 =
+      (if) [
+        [ FALSE ]
+        [ uncons -> h/c
+          h/c ripple/delimiter?
+          (if) [
+            [ h/c cons FALSE ]
+            [ >< h/c cons >< TRUE ]
+          ]
+        ]
+      ]
+    ]
+    >< reverse ]
+
+(=> ripple/span)
+-- Nonempty description -- Remainder Span
+  [ uncons -> h/first
+    h/first '" =
+    (if) [
+      [ ripple/string-span ]
+      [ h/first '' =
+        (if) [
+          [ ripple/character-span ]
+          [ h/first ripple/delimiter?
+            (if) [ [ [] h/first cons ] [ h/first cons ripple/word-span ] ]
+          ]
+        ]
+      ]
+    ] ]
+
+(=> ripple/span-style)
+-- Span -- Span Commands
+  [ -> h/span
+    h/span uncons >< << -> h/first
+    []
+    h/first ': = h/first 'S = or [ << [:red] ] !?
+    h/first '" = h/first '' = or [ << [:green] ] !?
+    h/span "TRUE" = h/span "FALSE" = or [ << [:magenta] ] !?
+    "0123456789-.N" h/first included? >< << [ << [:cyan] ] !?
+    h/span "..." = [ << [:dim] ] !?
+    h/span >< ]
+
+(=> ripple/highlight)
+-- Description -- Colored-description
+  [ "" ><
+    ([length? 0 >] while) [
+      ripple/span -> h/span -> h/rest
+      h/span ripple/span-style ansi-style ++ h/rest
+    ]
+    << ]
+
+(=> ripple/prompt)
+-- -- Prompt; preview only three bounded descriptions, bottom to top.
+  [ 3 127 3 ripple/stack-view -> p/color <<
+    reverse "" ><
+    (each) [
+      p/color [ ripple/highlight ] !?
+      ++ " " ++
+    ]
+    "> " ++ ]

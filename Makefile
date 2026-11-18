@@ -18,6 +18,7 @@ test: shirka test-harness
 	./shirka test/parser.shk
 	./shirka test/operations.shk
 	./shirka test/ansi.shk
+	./shirka test/ripple-highlight.shk
 
 # Count allocations independently of the Shirka test framework.
 test-reclamation:
@@ -49,7 +50,7 @@ RIPPLE_LIBS ?= $(if $(READLINE_PREFIX),-L$(READLINE_PREFIX)/lib) -lreadline -lm
 .PHONY: ripple
 ripple: utils/ripple/ripple
 
-utils/ripple/ripple: utils/ripple/ripple.c utils/ripple/terminal.c utils/ripple/ripple.h utils/ripple/ripple.shk env.o objects.o parser.o
+utils/ripple/ripple: utils/ripple/ripple.c utils/ripple/terminal.c utils/ripple/ripple.h utils/ripple/ripple.shk utils/ripple/highlight.shk lib/ansi.shk env.o objects.o parser.o
 	$(CC) $(CFLAGS) $(RIPPLE_CPPFLAGS) -DRIPPLE_HOME='"$(CURDIR)"' \
 		-o $@ utils/ripple/ripple.c utils/ripple/terminal.c \
 		env.o objects.o parser.o $(RIPPLE_LIBS)

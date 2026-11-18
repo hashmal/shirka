@@ -17,11 +17,11 @@ Seven private intrinsics are available to the controller:
 
 | Intrinsic | Stack effect | Native responsibility |
 | --- | --- | --- |
-| `ripple/read-line` | `continuation? -- text status` | One editor/stream read; status is `:line`, `:cancel`, `:eof`, `:invalid`, or `:error` (unrecoverable input failure). |
+| `ripple/read-line` | `prompt -- text status` | One editor/stream read; status is `:line`, `:cancel`, `:eof`, `:invalid`, or `:error` (unrecoverable input failure). |
 | `ripple/parse` | `text -- instructions status` | Actual parser; `:ready`, `:more`, or `:invalid`. Non-ready results carry an empty instruction list. |
 | `ripple/execute` | `instructions -- success?` | Consume instructions and execute on the persistent user stack, catching errors and unwinding unfinished calls. |
 | `ripple/load-file` | `path -- success?` | Load, parse, and execute a file in that same session, including recovery from load errors. |
-| `ripple/stack-view` | `-- descriptions omitted?` | Bounded character-list descriptions, top first; no session values are copied or consumed. |
+| `ripple/stack-view` | `count width depth -- descriptions omitted? color?` | Bounded character-list descriptions, top first; no session values are copied or consumed. Limits are 256 values, 511 bytes, depth six. |
 | `ripple/clear-stack` | `--` | Destroy session stack values safely. |
 | `ripple/history` | `text --` | Store a completed submission through Readline; no-op in stream mode. |
 
@@ -30,7 +30,9 @@ print, or stop. `ripple/stack` numbers and prints the returned descriptions usin
 the self-hosted `each`. Native inspection and clearing remain necessary because
 the controller must not take ownership of the session stack. File loading and
 execution share one protected native evaluation path. Prompt inspection stays
-native so refreshing it never clones the user's values.
+native so refreshing it never clones the user's values. Prompt assembly and
+highlighting live in `highlight.shk`; the host explicitly loads `lib/ansi.shk`
+into the controller. It is not implicitly loaded into the user session.
 
 Text assembly uses ordinary Shirka lists and the existing `++` operation. This
 preserves self-hosting at the cost of Shirka's existing copying and concatenation
@@ -160,10 +162,27 @@ Source submissions are limited to 1 MiB. Literal ASCII terminal-control bytes, i
 ESC and NUL, are rejected before parsing; use Shirka escape syntax for character
 data. Bracketed paste is inserted as text, not interpreted as editor commands.
 Explicit Shirka output still behaves normally and may itself contain control
-characters. Input highlighting is deferred: Readline has no simple token-color
-callback, and a custom redisplay layer would complicate editing. No syntax colors
-are emitted, including when `NO_COLOR` is set. Readline still uses terminal-control
-sequences for interactive editing.
+characters.
+
+Interactive stack previews and `/stack` are colored using the self-hosted
+`ansi-style`: Symbols and QuotedSymbols red, strings and Characters green,
+numbers cyan, Booleans magenta, and truncation markers dim. List brackets and
+separators keep the default color. Values inside lists are highlighted too.
+For example, `Symbol(TRUE)` is red while the actual Boolean `TRUE` is magenta.
+The highlighter scans bounded diagnostic descriptions, including escaped quotes,
+character literals containing brackets, and incomplete/truncated spans; it never
+parses or executes user values. Colors use selective cleanup, without full resets.
+
+Color is disabled if `NO_COLOR` is present (even empty), for `TERM=dumb`, or in
+stream mode. There is no additional terminal color-capability negotiation.
+Readline still uses terminal-control sequences for interactive editing.
+The native adapter marks SGR sequences as nonprinting for Readline's cursor and
+wrapping calculations. Colored output is never stored in history.
+
+Recalled history and current input remain plain editable source. Both share
+Readline's input buffer; coloring either requires a live redisplay layer, which
+is still deferred. Adding ANSI bytes to history would corrupt source and cursor
+positions, so history entries are kept unchanged.
 
 History uses `$XDG_STATE_HOME/ripple/history`, or
 `$HOME/.local/state/ripple/history`. It is private (0600), capped at 500 entries,
@@ -188,7 +207,11 @@ final stream exit status is nonzero if any submission failed.
 
 `make test-ripple` uses C parser/inspection checks and Unix pseudo-terminals to
 exercise real editing, paste, history persistence, Ctrl-C cancellation and
-execution interruption, EOF, `/load`, and terminal restoration. The existing
+execution interruption, EOF, `/load`, and terminal restoration. It also checks
+colored nested previews, `/stack`, cursor editing and wrapping with SGR prompts,
+plain stream output, `NO_COLOR`, and the absence of color bytes in stored history.
+`make test` includes exact character-list tests for the diagnostic highlighter.
+The existing
 allocation-counter test also exercises 100 successful and failing submissions
 against one persistent environment. `test-ripple` also runs
 `test-ripple-reclamation`: it drives the actual controller and host through 100

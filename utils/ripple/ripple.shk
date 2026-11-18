@@ -105,10 +105,11 @@
 
 (=> ripple/stack)
 -- Inspection returns descriptions, not the session values themselves.
-  [ ripple/stack-view -> omitted
+  [ 256 511 6 ripple/stack-view -> s/color -> omitted
     length? 0 = [ "(empty stack)" puts ] !?
     0 ><
-    (each) [ -> value >> print ": " print <- value puts 1 + ]
+    (each) [ -> value >> print ": " print
+      <- value s/color [ ripple/highlight ] !? puts 1 + ]
     <<
     omitted [ "... additional stack values omitted" puts ] !? ]
 
@@ -149,7 +150,9 @@
 (=> ripple/step)
 -- Pending-text Success-so-far -- Pending-text Success-so-far Continue?
   [ -> ok -> source
-    source ripple/nonempty? ripple/read-line -> status -> line
+    source ripple/nonempty?
+    (if) [ [ "... " ] [ ripple/prompt ] ]
+    ripple/read-line -> status -> line
     status :line = (!?) [
       source ripple/nonempty?
       (if) [

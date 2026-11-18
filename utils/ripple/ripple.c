@@ -77,17 +77,16 @@ static int evaluate (skO *list, char *path)
 	return 1;
 }
 
-/* continuation? -- text :line|:cancel|:eof|:invalid|:error */
+/* prompt -- text :line|:cancel|:eof|:invalid|:error */
 static skO *read_line (skE *env)
 {
-	skO *continuation = skE_stackPeek(env, 0);
+	char *prompt = text_pop(env);
 	enum ripple_input status;
 	char *text;
 	const char *names[] = {"line", "cancel", "eof", "invalid", "error"};
 
-	skE_checkType(env, continuation, SKO_BOOLEAN);
-	text = ripple_read_line(continuation->data.boolean, &status);
-	skO_free(skE_stackPop(env));
+	text = ripple_read_line(prompt, &status);
+	free(prompt);
 	skE_stackPush(env, text_new(text));
 	free(text);
 	skE_stackPush(env, skO_quoted_symbol_new((char *)names[status]));
@@ -127,23 +126,42 @@ static skO *load_file (skE *env)
 	return NULL;
 }
 
-/* -- descriptions omitted?; bounded text, never copies of session values. */
+static int view_limit (skE *env, size_t depth, int maximum)
+{
+	skO *value = skE_stackPeek(env, depth);
+
+	skE_checkType(env, value, SKO_NUMBER);
+	if (!(value->data.number >= 1 && value->data.number <= maximum))
+		skE_error(env, "ripple: invalid stack inspection limit");
+	return (int)value->data.number;
+}
+
+/* count width depth -- descriptions omitted? color?; never copies values. */
 static skO *stack_view (skE *env)
 {
 	skO *node = ripple.session->stack;
-	skO *list = skO_list_new();
-	skO **tail = &list->data.list;
+	skO *list;
+	skO **tail;
 	char value[512];
 	size_t count = 0;
+	int depth = view_limit(env, 0, 6);
+	int width = view_limit(env, 1, 511);
+	int limit = view_limit(env, 2, 256);
 
-	while (node && count++ < 256) {
-		skO_inspect(node, value, sizeof(value), 6);
+	list = skO_list_new();
+	tail = &list->data.list;
+	skO_free(skE_stackPop(env));
+	skO_free(skE_stackPop(env));
+	skO_free(skE_stackPop(env));
+	while (node && count++ < (size_t)limit) {
+		skO_inspect(node, value, (size_t)width + 1, (unsigned)depth);
 		*tail = text_new(value);
 		tail = &(*tail)->next;
 		node = node->next;
 	}
 	skE_stackPush(env, list);
 	skE_stackPush(env, skO_boolean_new(node != NULL));
+	skE_stackPush(env, skO_boolean_new(ripple.color));
 	return NULL;
 }
 
@@ -183,6 +201,7 @@ int main (int argc, char **argv)
 		status = EXIT_FAILURE;
 	} else {
 		skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/lib/prelude.shk"), 0);
+		skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/lib/ansi.shk"), 0);
 		if (setjmp(ripple.session->jmp)) {
 			status = EXIT_FAILURE;
 		} else {
@@ -199,6 +218,7 @@ int main (int argc, char **argv)
 			skE_defNative(control, "ripple/stack-view", stack_view);
 			skE_defNative(control, "ripple/clear-stack", clear_stack);
 			skE_defNative(control, "ripple/history", remember);
+			skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/utils/ripple/highlight.shk"), 0);
 			skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/utils/ripple/ripple.shk"), 0);
 			/* The controller leaves its accumulated success flag on top. */
 			skE_checkType(control, skE_stackPeek(control, 0), SKO_BOOLEAN);

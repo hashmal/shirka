@@ -24,6 +24,7 @@ static size_t used;
 static int terminal;
 static pid_t child;
 static int tty_session;
+static int colors;
 static char state_path[] = "/tmp/ripple-test-XXXXXX";
 
 static void expect (const char *text)
@@ -88,7 +89,10 @@ static void start (int interactive, const char *input)
 	if (!child) {
 		setenv("XDG_STATE_HOME", state_path, 1);
 		setenv("TERM", "xterm", 1);
-		setenv("NO_COLOR", "1", 1);
+		if (colors)
+			unsetenv("NO_COLOR");
+		else
+			setenv("NO_COLOR", "1", 1);
 		if (!interactive) {
 			dup2(pipe_in[0], STDIN_FILENO);
 			dup2(pipe_out[1], STDOUT_FILENO);
@@ -279,6 +283,33 @@ send_text("12 34\033b5\n"); expect("3 12 534 > ");
 	start(1, NULL);
 	assert(kill(child, SIGTERM) == 0);
 	finish(0);
+	colors = 1;
+	start(0, "\"hello\" :foo 12\n/stack\n");
+	expect("2: \"hello\"");
+	assert(!strchr(output, 27)); /* Streams stay plain even without NO_COLOR. */
+	finish(0);
+	start(1, NULL);
+	send_text(":foo \"hello\" 12\n");
+	expect("\033[31m:foo\033[39m \033[32m\"hello\"\033[39m \033[36m12\033[39m > ");
+	send_text("/clear\n"); expect("> ");
+	send_text("[x :y \"z\" TRUE 3 '[ ]\n");
+	expect("[\033[31mSymbol(x)\033[39m \033[31m:y\033[39m \033[32m\"z\"\033[39m");
+	expect("\033[31mSymbol(TRUE)\033[39m \033[36m3\033[39m \033[32m'[\033[39m] > ");
+	send_text("/stack\n"); expect("0: [\033[31mSymbol(x)\033[39m"); expect("> ");
+	/* Editing with a colored, long prompt must still use visible columns. */
+	send_text("12\033[H3\033[F\n"); expect("\033[36m312\033[39m > ");
+	send_text("missing\n"); expect("\033[36m312\033[39m > ");
+	send_text("1                                                                                \033[H2\033[F\n");
+	expect("\033[36m21\033[39m > ");
+	send_text("\003"); expect("\033[36m21\033[39m > ");
+	send_text("/clear\n"); expect("> ");
+	send_text("\033[A\n"); expect("> ");
+	send_text("TRUE\n"); expect("\033[35mTRUE\033[39m > ");
+	send_text("/exit\n"); finish(0);
+	file = fopen(history, "r"); assert(file);
+	while (!feof(file))
+		assert(fgetc(file) != 27); /* History stores source, never color bytes. */
+	fclose(file);
 	unlink(history);
 	unlink(load_path);
 	snprintf(history, sizeof(history), "%s/ripple", state_path);

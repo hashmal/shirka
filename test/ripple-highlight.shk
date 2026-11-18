@@ -1,0 +1,23 @@
+"lib/test.shk" with
+"lib/ansi.shk" with
+"utils/ripple/highlight.shk" with
+
+(test/run) [
+  [ "" ripple/highlight "" ] assert_equal
+  [ "[]" ripple/highlight "[]" ] assert_equal
+  [ ":foo Symbol(foo)" ripple/highlight
+    "\033[31m:foo\033[39m \033[31mSymbol(foo)\033[39m" ] assert_equal
+  [ "[TRUE Symbol(TRUE) 12]" ripple/highlight
+    "[\033[35mTRUE\033[39m \033[31mSymbol(TRUE)\033[39m \033[36m12\033[39m]" ] assert_equal
+  [ "\"a\\\"[] 12\"" ripple/highlight
+    "\033[32m\"a\\\"[] 12\"\033[39m" ] assert_equal
+  [ "'[ '] '\\x1b" ripple/highlight
+    "\033[32m'[\033[39m \033[32m']\033[39m \033[32m'\\x1b\033[39m" ] assert_equal
+  [ "\"truncated..." ripple/highlight
+    "\033[32m\"truncated...\033[39m" ] assert_equal
+  [ "'\\x" ripple/highlight "\033[32m'\\x\033[39m" ] assert_equal
+  [ "[...]" ripple/highlight "[\033[2m...\033[22;22m]" ] assert_equal
+  [ "Number(NaN)" ripple/highlight
+    "\033[36mNumber(NaN)\033[39m" ] assert_equal
+  [ 42 "12" ripple/highlight << 42 ] assert_equal
+]

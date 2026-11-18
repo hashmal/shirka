@@ -39,13 +39,14 @@ void sk_test_free (void *pointer)
 void ripple_terminal_init (void)
 {
 	ripple.interactive = 0;
+	/* Exercise styled prompt construction without depending on a real TTY. */
+	ripple.color = 1;
 }
 
 void ripple_terminal_free (void) {}
 void ripple_history (const char *text) { (void)text; }
-void ripple_prompt (char *buffer, size_t size) { (void)buffer; (void)size; }
 
-char *ripple_read_line (int continuation, enum ripple_input *status)
+char *ripple_read_line (const char *prompt, enum ripple_input *status)
 {
 	const char *inputs[] = {
 		"1 increment", "/clear", "1 TRUE +", "/clear",
@@ -61,7 +62,7 @@ char *ripple_read_line (int continuation, enum ripple_input *status)
 		submission = 0;
 		return strdup("42 -> persistent [1 +] => increment");
 	}
-	assert(continuation == (submission == 9 || submission == 10));
+	assert((!strcmp(prompt, "... ")) == (submission == 9 || submission == 10));
 	if (!submission) {
 		assert(!ripple.session->stack);
 		if (cycle == 1)
