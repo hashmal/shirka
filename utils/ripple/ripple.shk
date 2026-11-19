@@ -94,7 +94,7 @@
     length? 0 = [ "(empty stack)" puts ] !?
     0 ><
     (each) [ -> value >> print ": " print
-      <- value s/color [ ripple/highlight ] !? puts 1 + ]
+      <- value s/color ripple/format puts 1 + ]
     <<
     omitted [ "... additional stack values omitted" puts ] !? ]
 

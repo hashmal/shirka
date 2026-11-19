@@ -83,28 +83,49 @@
   [ -> h/span
     h/span uncons >< << -> h/first
     []
-    h/first ': = h/first 'S = or [ << [:red] ] !?
+    h/first ': = [ << [:red] ] !?
     h/first '" = h/first '' = or [ << [:green] ] !?
     h/span "TRUE" = h/span "FALSE" = or [ << [:magenta] ] !?
     "0123456789-.N" h/first included? >< << [ << [:cyan] ] !?
     h/span "..." = [ << [:dim] ] !?
     h/span >< ]
 
-(=> ripple/highlight)
--- Description -- Colored-description
-  [ "" ><
+(=> ripple/render-span)
+-- Inspector span -- Display span Commands. Keep symbol identity until styling.
+  [ -> h/original
+    h/original 7 ripple/chars "Symbol(" =
+    (if) [
+      [ reverse
+        length? 0 > [
+          uncons -> h/end
+          h/end ') = not [ h/end cons ] !?
+        ] !?
+        reverse []
+      ]
+      [ << h/original ripple/span-style ]
+    ] ]
+
+(=> ripple/format)
+-- Description Color? -- Display-description; strip wrappers even without color.
+  [ -> h/color "" ><
     ([length? 0 >] while) [
       ripple/span -> h/span -> h/rest
-      h/span ripple/span-style ansi-style ++ h/rest
+      h/span ripple/render-span
+      h/color (if) [ [ ansi-style ] [ << ] ]
+      ++ h/rest
     ]
     << ]
+
+(=> ripple/highlight)
+-- Description -- Colored-description
+  [ TRUE ripple/format ]
 
 (=> ripple/prompt)
 -- -- Prompt; preview only three bounded descriptions, bottom to top.
   [ 3 127 3 ripple/stack-view -> p/color <<
     reverse "" ><
     (each) [
-      p/color [ ripple/highlight ] !?
+      p/color ripple/format
       ++ " " ++
     ]
     "> " ++ ]

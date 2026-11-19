@@ -219,7 +219,7 @@ int main (void)
 		"/load test/fixtures/absent.shk\n/load test/fixtures/malformed.shk\n"
 		"77 -> survived abort\nsurvived puts\n/exit\n999 puts\n");
 	expect("77");
-	assert(strstr(output, "Symbol(/exit)") && strstr(output, "8\n9\n"));
+	assert(strstr(output, "[/exit]") && strstr(output, "8\n9\n"));
 	assert(strstr(output, "Usage: /load PATH") && !strstr(output, "999"));
 	finish(1);
 	start(0, "[1] 300 times\n/stack\n/clear\n/stack\n");
@@ -241,7 +241,7 @@ snprintf(load_path, sizeof(load_path), "%s/load data.shk", state_path);
 	send_text("3\n"); expect("2 3 > ");
 	send_text("[]\n"); expect("2 3 [] > ");
 	send_text("/clear\n"); expect("> ");
-	send_text(":puts :puts unquote\n"); expect(":puts Symbol(puts) > ");
+	send_text(":puts :puts unquote\n"); expect(":puts puts > ");
 	send_text("/clear\n"); expect("> ");
 	send_text("42 -> x\n"); expect("> ");
 	send_text("x\n"); expect("42 > ");
@@ -293,9 +293,9 @@ send_text("12 34\033b5\n"); expect("3 12 534 > ");
 	expect("\033[31m:foo\033[39m \033[32m\"hello\"\033[39m \033[36m12\033[39m > ");
 	send_text("/clear\n"); expect("> ");
 	send_text("[x :y \"z\" TRUE 3 '[ ]\n");
-	expect("[\033[31mSymbol(x)\033[39m \033[31m:y\033[39m \033[32m\"z\"\033[39m");
-	expect("\033[31mSymbol(TRUE)\033[39m \033[36m3\033[39m \033[32m'[\033[39m] > ");
-	send_text("/stack\n"); expect("0: [\033[31mSymbol(x)\033[39m"); expect("> ");
+	expect("[x \033[31m:y\033[39m \033[32m\"z\"\033[39m");
+	expect("TRUE \033[36m3\033[39m \033[32m'[\033[39m] > ");
+	send_text("/stack\n"); expect("0: [x"); expect("> ");
 	/* Editing with a colored, long prompt must still use visible columns. */
 	send_text("12\033[H3\033[F\n"); expect("\033[36m312\033[39m > ");
 	send_text("missing\n"); expect("\033[36m312\033[39m > ");

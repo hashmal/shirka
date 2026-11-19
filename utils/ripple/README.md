@@ -165,10 +165,13 @@ Explicit Shirka output still behaves normally and may itself contain control
 characters.
 
 Interactive stack previews and `/stack` are colored using the self-hosted
-`ansi-style`: Symbols and QuotedSymbols red, strings and Characters green,
-numbers cyan, Booleans magenta, and truncation markers dim. List brackets and
+`ansi-style`: QuotedSymbols red, executable symbols in the default color,
+strings and Characters green, numbers cyan, Booleans magenta, and truncation
+markers dim. List brackets and
 separators keep the default color. Values inside lists are highlighted too.
-For example, `Symbol(TRUE)` is red while the actual Boolean `TRUE` is magenta.
+Executable symbols display as their names, without the diagnostic `Symbol(...)`
+wrapper. A symbol named `TRUE` uses the default color; the actual Boolean `TRUE`
+is magenta. This presentation also applies without color and in `/stack`.
 The highlighter scans bounded diagnostic descriptions, including escaped quotes,
 character literals containing brackets, and incomplete/truncated spans; it never
 parses or executes user values. Colors use selective cleanup, without full resets.
