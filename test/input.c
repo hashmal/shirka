@@ -1,6 +1,6 @@
 /* Parser memory-safety regressions. Run from the repository root:
  * cc -std=c99 -g -fsanitize=address,undefined -I. \
- *    test/input.c parser.c objects.c -o /tmp/shirka-input-test
+ *    test/input.c parser.c objects.c scope.c hashmap.c -o /tmp/shirka-input-test
  * /tmp/shirka-input-test
  */
 #include <assert.h>

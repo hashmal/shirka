@@ -88,6 +88,16 @@
       [ text :code ]
     ] ]
 
+(=> ripple/stack)
+-- Inspection returns descriptions, not the session values themselves.
+  [ 256 511 6 ripple/stack-view -> s/color -> omitted
+    length? 0 = [ "(empty stack)" puts ] !?
+    0 ><
+    (each) [ -> value >> print ": " print
+      <- value s/color [ ripple/highlight ] !? puts 1 + ]
+    <<
+    omitted [ "... additional stack values omitted" puts ] !? ]
+
 (=> ripple/dispatch)
 -- Argument Command -- Success? Continue?
   [ -> command -> argument
@@ -102,16 +112,6 @@
         [ "Usage: /load PATH" puts FALSE TRUE ]
       ]
     ] ]
-
-(=> ripple/stack)
--- Inspection returns descriptions, not the session values themselves.
-  [ 256 511 6 ripple/stack-view -> s/color -> omitted
-    length? 0 = [ "(empty stack)" puts ] !?
-    0 ><
-    (each) [ -> value >> print ": " print
-      <- value s/color [ ripple/highlight ] !? puts 1 + ]
-    <<
-    omitted [ "... additional stack values omitted" puts ] !? ]
 
 (=> ripple/parse-and-run)
 -- Text Success-so-far -- Pending-text Success-so-far Continue?

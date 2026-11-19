@@ -75,3 +75,18 @@ collisions, stable pointers, all value types, three-level lookup, shadowing,
 restoration of ancestors, ownership transfer, replacement, and failed allocations.
 Only hashmap allocations are counted by this test's injected allocator; the
 interpreter's intentional symbol retention is unchanged.
+
+## Lexical-scoping branch extensions
+
+The interpreter's snapshot wrapper is `skL` (`scope.c`). It owns the lifetime of
+lexical ancestors while `skH` continues borrowing ancestor maps. `skH_copy`
+clones local entries and retains the same borrowed ancestor pointer; its caller
+must preserve that ancestor's lifetime. Copy failure releases partial entries.
+
+Two additional kinds support lexical dictionaries: `SKH_NATIVE` has a static
+`native` function pointer and NULL value; `SKH_HIDDEN` has NULL value and stops
+lookup without falling through to ancestors. `skH_setNative` and `skH_hide`
+create these entries. `skH_set` still accepts only the original value/operation
+kinds. `skH_get` returns hidden entries so callers can distinguish a masked name
+from an absent local entry. `skH_take` can remove these entries too, returning
+NULL and setting the kind output; use lookup first when that distinction matters.

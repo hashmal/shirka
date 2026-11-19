@@ -22,13 +22,17 @@
  *
  * - skO for names related to objects
  * - skE for names related to environments
+ * - skH for symbol hash tables
+ * - skL for reference-counted lexical dictionary snapshots
  */
 
 #include <stdio.h>
 #include <setjmp.h>
 #include <signal.h>
 
+#ifndef SK_NO_TAIL
 #define SK_O_TAIL
+#endif
 
 #define SYMBOL_MAX_LENGTH 256
 
@@ -41,7 +45,8 @@ typedef struct symbol   symbol;
 typedef struct skO      skO;
 typedef struct skE      skE;
 typedef struct context  context;
-typedef struct reserved reserved;
+typedef struct skH skH;
+typedef struct skL skL;
 typedef struct execution execution;
 
 struct symbol {
@@ -60,6 +65,9 @@ typedef enum {
 
 struct skO {
 	skO   *next;
+	skL   *scope;   /* Captured dictionary; lists only. */
+	symbol *self;   /* Named operation recursion; no owning back-reference. */
+	int literal;   /* Parsed list instruction, not an inserted list value. */
 	skO_t tag;
 	union {
 		double number;
@@ -81,24 +89,22 @@ struct skE {
 
 typedef skO *(skE_natOp)(skE*);
 
-struct context {
-	context  *parent;
-	reserved *first_def;
+struct skL {
+	size_t references;
+	skH *map;
+	skL *ancestor;
 };
 
-struct reserved {
-	reserved *next;
-	symbol   *sym;
-	enum {
-		KIND_OBJECT,
-		KIND_OPERATION,
-		KIND_NATIVE
-	} kind;
-	union {
-		skO       *obj;
-		skE_natOp *native;
-	} data;
+struct context {
+	context *parent; /* Execution cleanup chain, never name lookup. */
+	skL *bindings;
 };
+
+skL *skL_new (skL *ancestor);
+skL *skL_retain (skL *scope);
+void skL_free (skL *scope);
+void skL_write (skL **scope);
+void skO_capture (skO *list, skL *scope);
 
 /*////////////////////////////////////////////////////////////////////////////
 //                                 OBJECTS                                  //

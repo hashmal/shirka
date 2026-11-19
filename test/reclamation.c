@@ -66,6 +66,16 @@ static void exercise (void)
 	skE *env;
 
 	run("1 2 3 [4 [5]]", 1);
+	run("\"lib/prelude.shk\" with "
+		"[-> n [n +]] => make-adder 10 make-adder => add-ten 5 add-ten", 1);
+	run("\"lib/prelude.shk\" with "
+		"[ [recur] ] => recur recur !", 1);
+	run("\"lib/prelude.shk\" with "
+		"10 -> x [[x]] -> branches 20 -> branches.x branches uncons >< << !", 1);
+	run("[] -> record 42 -> record.x <- record.x record.x", 0);
+	run("[] -> record [] -> record.x 42 -> record.x.value "
+		"record.x -> record.x.y", 1);
+	run("[] -> record [] -> record.x <- record.x -> record.x.y", 0);
 	run("\"lib/prelude.shk\" with \"lib/ansi.shk\" with "
 		"\"a\" \"b\" [:bold :blue] ansi-style ++ [:dim :red] ansi-style", 1);
 	parse("'\\0334 \"\\0x\" '\\377", 1);
@@ -151,6 +161,13 @@ static void persistent_session (void)
 		assert(env->scope == scope && !env->execution);
 		assert(allocations == baseline);
 	}
+	/* Replacing scalar reserves must not retain dictionary version history. */
+	for (i = 0; i < 100; i++) {
+		submit(env, "99 -> persistent");
+		assert(env->scope == scope && !env->execution);
+		assert(allocations == baseline);
+	}
+	submit(env, "42 -> persistent");
 	submit(env, "persistent");
 	assert(env->stack->data.number == 42);
 	skE_free(env);

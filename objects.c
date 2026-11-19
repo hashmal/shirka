@@ -8,6 +8,35 @@
 
 symbol *symbol_list = NULL;
 
+static skO *object_new (void)
+{
+	skO *object = malloc(sizeof(skO));
+
+	if (!object)
+		FATAL("PANIC! Could not allocate object.\n");
+	object->next = NULL;
+	object->scope = NULL;
+	object->self = NULL;
+	object->literal = 0;
+	return object;
+}
+
+void skO_capture (skO *list, skL *scope)
+{
+	skO *node;
+	skL *captured = skL_new(scope);
+
+	skL_free(list->scope);
+	list->scope = captured;
+	list->literal = 0;
+	for (node = list->data.list; node; node = node->next) {
+		if (node->tag == SKO_LIST && node->literal) {
+			skO_capture(node, list->scope);
+			node->literal = 1;
+		}
+	}
+}
+
 symbol *symbol_id_from_string (char *str)
 {
 	symbol *sym = symbol_list;
@@ -39,7 +68,7 @@ skO *skO_clone (skO *obj)
 	skO *iter;
 	skO *child_copy;
 
-	copy       = malloc(sizeof(skO));
+	copy       = object_new();
 	copy->next = NULL;
 	copy->tag  = obj->tag;
 
@@ -52,6 +81,9 @@ skO *skO_clone (skO *obj)
 		copy->data = obj->data;
 		break;
 	case SKO_LIST:
+		copy->scope = skL_retain(obj->scope);
+		copy->self = obj->self;
+		copy->literal = obj->literal;
 		copy->data.list = NULL;
 
 		iter = obj->data.list;
@@ -77,6 +109,7 @@ void skO_free (skO *obj)
 
 	switch (obj->tag) {
 	case SKO_LIST:
+		skL_free(obj->scope);
 		node = obj->data.list;
 		while (node) {
 			next = node->next;
@@ -100,7 +133,7 @@ void skO_free (skO *obj)
 
 skO *skO_number_new (double d)
 {
-	skO *obj = malloc(sizeof(skO));
+	skO *obj = object_new();
 
 	obj->next        = NULL;
 	obj->tag         = SKO_NUMBER;
@@ -111,7 +144,7 @@ skO *skO_number_new (double d)
 
 skO *skO_boolean_new (int b)
 {
-	skO *obj = malloc(sizeof(skO));
+	skO *obj = object_new();
 
 	obj->next         = NULL;
 	obj->tag          = SKO_BOOLEAN;
@@ -122,7 +155,7 @@ skO *skO_boolean_new (int b)
 
 skO *skO_character_new (char c)
 {
-	skO *obj = malloc(sizeof(skO));
+	skO *obj = object_new();
 
 	obj->next           = NULL;
 	obj->tag            = SKO_CHARACTER;
@@ -133,7 +166,7 @@ skO *skO_character_new (char c)
 
 skO *skO_quoted_symbol_new (char *a)
 {
-	skO *obj = malloc(sizeof(skO));
+	skO *obj = object_new();
 
 	obj->next     = NULL;
 	obj->tag      = SKO_QSYMBOL;
@@ -144,7 +177,7 @@ skO *skO_quoted_symbol_new (char *a)
 
 skO *skO_symbol_new (char *a)
 {
-	skO *obj = malloc(sizeof(skO));
+	skO *obj = object_new();
 
 	obj->next     = NULL;
 	obj->tag      = SKO_SYMBOL;
@@ -155,7 +188,7 @@ skO *skO_symbol_new (char *a)
 
 skO *skO_list_new (void)
 {
-	skO *obj = malloc(sizeof(skO));
+	skO *obj = object_new();
 
 	obj->next      = NULL;
 	obj->tag       = SKO_LIST;

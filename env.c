@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include "shirka.h"
+#include "hashmap.h"
+#include <string.h>
 
 void load_intrinsics (skE *env);
 
@@ -13,6 +14,7 @@ void load_intrinsics (skE *env);
 struct execution {
 	execution *parent; /* Enclosing execution in this environment. */
 	skO *list;         /* Remaining instructions, excluding current. */
+	int scoped;       /* This frame owns an invocation scope. */
 	skO *current;      /* Detached token being processed; NULL once released. */
 };
 
@@ -64,49 +66,42 @@ void skE_stackPush (skE *env, skO *obj)
 	env->stack = obj;
 }
 
-context *scope_get (skE *env)
+static symbol *part (const char *name, size_t length)
 {
-	return env->scope;
+	char buffer[SYMBOL_MAX_LENGTH];
+	skO *object;
+	symbol *key;
+
+	memcpy(buffer, name, length);
+	buffer[length] = 0;
+	object = skO_symbol_new(buffer);
+	key = object->data.sym;
+	skO_free(object);
+	return key;
 }
 
-reserved *scope_find (skE *env, skO *sym)
+static const char *path_dot (const char *name)
 {
-	context *current_scope = env->scope;
-	reserved *node;
-	reserved *next;
-
-	skO_checkType(sym, SKO_SYMBOL);
-
-	while (current_scope) {
-		node = current_scope->first_def;
-		while (node) {
-			next = node->next;
-			if (node->sym == sym->data.sym) {
-				return node;
-			}
-			node = next;
-		}
-		current_scope = current_scope->parent;
-	}
-
-	return NULL;
+	if (!*name || *name == '.' || name[strlen(name) - 1] == '.' || strstr(name, ".."))
+		return NULL;
+	return strchr(name, '.');
 }
 
-reserved *scope_find_current (skE *env, skO *sym)
+static const skH_binding *find (skL *scope, symbol *key)
 {
-	reserved *node;
-	reserved *next;
+	const char *name = key->name;
+	const char *dot;
+	const skH_binding *binding;
 
-	node = env->scope->first_def;
-	while (node) {
-		next = node->next;
-		if (node->sym == sym->data.sym) {
-			return node;
-		}
-		node = next;
+	while ((dot = path_dot(name))) {
+		binding = skH_get(scope->map, part(name, (size_t)(dot - name)));
+		if (!binding || !binding->value || binding->value->tag != SKO_LIST || !binding->value->scope)
+			return NULL;
+		scope = binding->value->scope;
+		name = dot + 1;
 	}
-
-	return NULL;
+	binding = skH_get(scope->map, name == key->name ? key : part(name, strlen(name)));
+	return binding && binding->kind != SKH_HIDDEN ? binding : NULL;
 }
 
 skE *skE_new (void)
@@ -153,153 +148,168 @@ void skE_free (skE *env)
 
 void skE_defNative (skE *env, char *name, skE_natOp *native)
 {
-	reserved *slot;
-	skO *obj = skO_symbol_new(name);
+	skO *key = skO_symbol_new(name);
 
-	slot              = malloc(sizeof(reserved));
-	slot->next        = env->scope->first_def;
-	slot->sym         = obj->data.sym;
-	slot->kind        = KIND_NATIVE;
-	slot->data.native = native;
+	skL_write(&env->scope->bindings);
+	if (!skH_setNative(env->scope->bindings->map, key->data.sym, native))
+		FATAL("PANIC! Could not define native operation.\n");
+	skO_free(key);
+}
 
-	env->scope->first_def = slot;
+/* Work on an independent root value before publishing a dotted update. */
+static int store (skH *map, symbol *key, skO *value, skH_kind kind)
+{
+	return kind == SKH_HIDDEN ? skH_hide(map, key) : skH_set(map, key, value, kind);
+}
 
-	skO_free(obj);
+static int assign (skE *env, symbol *key, skO *value, skH_kind kind)
+{
+	const char *name = key->name;
+	const char *dot = path_dot(name);
+	const skH_binding *binding;
+	skO *root;
+	skO *target;
+	skL **scope;
+	symbol *root_key;
+	skH_kind root_kind;
+
+	if (!dot) {
+		skL_write(&env->scope->bindings);
+		return store(env->scope->bindings->map, key, value, kind);
+	}
+	root_key = part(name, (size_t)(dot - name));
+	binding = skH_get(env->scope->bindings->map, root_key);
+	if (!binding || !binding->value || binding->value->tag != SKO_LIST)
+		return 0;
+	root = skO_clone(binding->value);
+	root_kind = binding->kind;
+	target = root;
+	name = dot + 1;
+	for (;;) {
+		if (!target->scope)
+			target->scope = skL_new(NULL);
+		scope = &target->scope;
+		skL_write(scope);
+		dot = path_dot(name);
+		key = part(name, dot ? (size_t)(dot - name) : strlen(name));
+		if (!dot) {
+			if (!store((*scope)->map, key, value, kind))
+				FATAL("PANIC! Could not assign field.\n");
+			break;
+		}
+		binding = skH_get((*scope)->map, key);
+		if (!binding || !binding->value || binding->value->tag != SKO_LIST) {
+			skO_free(root);
+			return 0;
+		}
+		target = skO_clone(binding->value);
+		if (!skH_set((*scope)->map, key, target, binding->kind))
+			FATAL("PANIC! Could not copy field.\n");
+		name = dot + 1;
+	}
+	skL_write(&env->scope->bindings);
+	if (!skH_set(env->scope->bindings->map, root_key, root, root_kind))
+		FATAL("PANIC! Could not assign record.\n");
+	return 1;
 }
 
 void skE_defObject (skE *env, skO *sym, skO *obj)
 {
-	reserved *slot;
+	int success;
 
 	skE_checkType(env, sym, SKO_QSYMBOL);
-
-	if (scope_find_current(env, sym)) {
-		/* Release previously defined object? */
-	}
-
-	slot           = malloc(sizeof(reserved));
-	slot->next     = scope_get(env)->first_def;
-	slot->sym      = sym->data.sym;
-	slot->kind     = KIND_OBJECT;
-	slot->data.obj = obj;
-
-	scope_get(env)->first_def = slot;
-
+	if (obj->tag == SKO_LIST && !obj->scope)
+		skO_capture(obj, env->scope->bindings);
+	success = assign(env, sym->data.sym, obj, SKH_VALUE);
 	skO_free(sym);
+	if (!success) {
+		skO_free(obj);
+		skE_error(env, "Invalid binding path.");
+	}
 }
 
 void skE_defOperation (skE *env, skO *sym, skO *obj)
 {
-	reserved *slot;
+	const char *name;
+	int success;
 
 	skE_checkType(env, sym, SKO_QSYMBOL);
 	skE_checkType(env, obj, SKO_LIST);
-
-	if (scope_find_current(env, sym)) {
-		fprintf(stderr, "PANIC! Can't redefine reserved operation %s.\n", sym->data.sym->name);
-		skO_free(sym);
-		skO_free(obj);
-		longjmp(env->jmp, 1);
-	}
-
-	slot           = malloc(sizeof(reserved));
-	slot->next     = scope_get(env)->first_def;
-	slot->sym      = sym->data.sym;
-	slot->kind     = KIND_OPERATION;
-	slot->data.obj = obj;
-
-	scope_get(env)->first_def = slot;
-
+	if (!obj->scope)
+		skO_capture(obj, env->scope->bindings);
+	name = path_dot(sym->data.sym->name) ? strrchr(sym->data.sym->name, '.') : NULL;
+	obj->self = name ? part(name + 1, strlen(name + 1)) : sym->data.sym;
+	success = assign(env, sym->data.sym, obj, SKH_OPERATION);
 	skO_free(sym);
+	if (!success) {
+		skO_free(obj);
+		skE_error(env, "Invalid operation path.");
+	}
 }
 
 void skE_undef (skE *env, skO *sym)
 {
-	reserved *r;
-	reserved *node = scope_get(env)->first_def;
+	const skH_binding *binding;
+	skO *value;
 
 	skE_checkType(env, sym, SKO_QSYMBOL);
-
-	r = scope_find_current(env, sym);
-
-	if (!r) {
-		fprintf(stderr, "PANIC! Reserved object not found in current scope.\n");
+	binding = find(env->scope->bindings, sym->data.sym);
+	if (!binding || binding->kind != SKH_VALUE) {
 		skO_free(sym);
-		longjmp(env->jmp, 1);
+		skE_error(env, "Restore requires a value binding in the current lexical scope.");
 	}
-
-	if (r->kind != KIND_OBJECT) {
-		fprintf(stderr, "PANIC! Expected object, got native or operation.\n");
-		skO_free(sym);
-		longjmp(env->jmp, 1);
-	}
-
-	if (node == r) {
-		scope_get(env)->first_def = r->next;
-		
+	if (path_dot(sym->data.sym->name)) {
+		value = skO_clone(binding->value);
+		if (!assign(env, sym->data.sym, NULL, SKH_HIDDEN))
+			FATAL("PANIC! Could not restore field.\n");
 	} else {
-		while (node->next != r)
-			node = node->next;
-
-		node->next = r->next;
+		skL_write(&env->scope->bindings);
+		value = skH_take(env->scope->bindings->map, sym->data.sym, NULL);
+		if (!value) {
+			binding = find(env->scope->bindings, sym->data.sym);
+			value = skO_clone(binding->value);
+		}
+		if (!skH_hide(env->scope->bindings->map, sym->data.sym))
+			FATAL("PANIC! Could not hide restored binding.\n");
 	}
-
-	r->next = NULL;
-	skE_stackPush(env, r->data.obj);
-	free(r);
+	skE_stackPush(env, value);
 	skO_free(sym);
 }
 
 void skE_scopePush (skE *env)
 {
-	context *ct = malloc(sizeof(context));
-	ct->parent = env->scope;
-	ct->first_def = NULL;
-	env->scope = ct;
-}
+	context *scope = malloc(sizeof(context));
 
-#ifdef SK_DEBUG_SCOPE
-void p_scope_data (skE *env)
-{
-	reserved *r = env->scope->first_def;
-	printf("[");
-	if (r) {
-		printf("%s", r->sym->name);
-		r = r->next;
-	}
-	while (r) {
-		printf(" %s", r->sym->name);
-		r = r->next;
-	}
-	printf("]");
+	if (!scope)
+		FATAL("PANIC! Could not allocate invocation.\n");
+	scope->parent = env->scope;
+	scope->bindings = skL_new(env->scope ? env->scope->bindings : NULL);
+	env->scope = scope;
 }
-#endif
 
 void skE_scopePop (skE *env)
 {
-	reserved *node;
-	reserved *next;
-	context *expired = env->scope;
+	context *scope = env->scope;
 
-	#ifdef SK_DEBUG_SCOPE
-	printf("    (undef) ");
-	p_scope_data(env);
-	printf("\n");
-	#endif
+	env->scope = scope->parent;
+	skL_free(scope->bindings);
+	free(scope);
+}
 
-	env->scope = expired->parent;
+static void invocation (skE *env, skO *list)
+{
+	context *scope;
+	skO *self;
 
-	node = expired->first_def;
-	while (node) {
-		next = node->next;
-		if (node->kind == KIND_OBJECT || node->kind == KIND_OPERATION) {
-			skO_free(node->data.obj);
-		}
-		free(node);
-		node = next;
+	skE_scopePush(env);
+	scope = env->scope;
+	skL_free(scope->bindings);
+	scope->bindings = skL_new(list->scope);
+	if (list->self) {
+		self = skO_clone(list);
+		if (!skH_set(scope->bindings->map, list->self, self, SKH_OPERATION))
+			FATAL("PANIC! Could not install recursive operation.\n");
 	}
-
-	free(expired);
 }
 
 void skE_call (skE *env, skO *sym)
@@ -315,15 +325,18 @@ void skE_execList (skE *env, skO *list, int scoping)
 	execution *frame = malloc(sizeof(execution));
 	skO *cont;
 	skO *tok;
-	reserved *r;
+	const skH_binding *r;
 
 	frame->parent = env->execution;
 	frame->list = list;
 	frame->current = NULL;
 	env->execution = frame;
 
+	frame->scoped = scoping;
+	if (!list->scope)
+		skO_capture(list, env->scope->bindings);
 	if (scoping)
-		skE_scopePush(env);
+		invocation(env, list);
 
 	while (frame->list->data.list) {
 		if (env->interrupt && *env->interrupt)
@@ -336,18 +349,18 @@ void skE_execList (skE *env, skO *list, int scoping)
 
 		switch (tok->tag) {
 		case SKO_SYMBOL:
-			r = scope_find(env, tok);
+			r = find(env->scope->bindings, tok->data.sym);
 			if (!r)
 				skE_error(env, "Not found: %s", tok->data.sym->name);
 			switch (r->kind) {
-			case KIND_OBJECT:
-				skE_stackPush(env, skO_clone(r->data.obj));
+			case SKH_VALUE:
+				skE_stackPush(env, skO_clone(r->value));
 				break;
-			case KIND_OPERATION:
-				cont = skO_clone(r->data.obj);
+			case SKH_OPERATION:
+				cont = skO_clone(r->value);
 				break;
-			case KIND_NATIVE:
-				cont = r->data.native(env);
+			case SKH_NATIVE:
+				cont = r->native(env);
 				break;
 			default:
 				skE_error(env, "Internal kind error.");
@@ -355,10 +368,13 @@ void skE_execList (skE *env, skO *list, int scoping)
 			skO_free(tok);
 			frame->current = NULL;
 			break;
+		case SKO_LIST:
+			if (tok->literal)
+				skO_capture(tok, env->scope->bindings);
+			/* fall through */
 		case SKO_QSYMBOL:
 		case SKO_NUMBER:
 		case SKO_CHARACTER:
-		case SKO_LIST:
 		case SKO_BOOLEAN:
 			skE_stackPush(env, tok);
 			frame->current = NULL;
@@ -368,10 +384,16 @@ void skE_execList (skE *env, skO *list, int scoping)
 		}
 
 		if (cont) {
+			if (!cont->scope)
+				skO_capture(cont, env->scope->bindings);
 			#ifdef SK_O_TAIL
 			if (!frame->list->data.list) {
 				skO_free(frame->list);
 				frame->list = cont;
+				if (frame->scoped)
+					skE_scopePop(env);
+				invocation(env, cont);
+				frame->scoped = 1;
 				continue;
 			}
 			#endif
@@ -379,7 +401,7 @@ void skE_execList (skE *env, skO *list, int scoping)
 		}
 	}
 
-	if (scoping)
+	if (frame->scoped)
 		skE_scopePop(env);
 	env->execution = frame->parent;
 	skO_free(frame->list);

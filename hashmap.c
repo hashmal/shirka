@@ -86,7 +86,8 @@ void skH_free (skH *map)
 	for (i = 0; i < map->capacity; i++) {
 		for (node = map->buckets[i]; node; node = next) {
 			next = node->next;
-			skO_free(node->binding.value);
+			if (node->binding.value)
+				skO_free(node->binding.value);
 			free(node);
 		}
 	}
@@ -119,21 +120,22 @@ const skH_binding *skH_get (const skH *map, const symbol *key)
 	return NULL;
 }
 
-int skH_set (skH *map, symbol *key, skO *value, skH_kind kind)
+static int set (skH *map, symbol *key, skO *value, skH_kind kind, skE_natOp *native)
 {
 	entry *node;
 	size_t slot;
 
-	if (!map || !key || !value || value->next ||
-		(kind != SKH_VALUE && kind != SKH_OPERATION))
+	if (!map || !key || (value && value->next) ||
+		(kind < SKH_VALUE || kind > SKH_HIDDEN))
 		return 0;
 	slot = hash(key) & (map->capacity - 1);
 	for (node = map->buckets[slot]; node; node = node->next) {
 		if (node->binding.key == key) {
-			if (node->binding.value != value)
+			if (node->binding.value && node->binding.value != value)
 				skO_free(node->binding.value);
 			node->binding.value = value;
 			node->binding.kind = kind;
+			node->binding.native = native;
 			return 1;
 		}
 	}
@@ -151,6 +153,7 @@ int skH_set (skH *map, symbol *key, skO *value, skH_kind kind)
 	node->binding.key = key;
 	node->binding.value = value;
 	node->binding.kind = kind;
+	node->binding.native = native;
 	node->next = map->buckets[slot];
 	map->buckets[slot] = node;
 	map->count++;
@@ -178,4 +181,44 @@ skO *skH_take (skH *map, const symbol *key, skH_kind *kind)
 	free(node);
 	map->count--;
 	return value;
+}
+
+int skH_set (skH *map, symbol *key, skO *value, skH_kind kind)
+{
+	if (!value || (kind != SKH_VALUE && kind != SKH_OPERATION))
+		return 0;
+	return set(map, key, value, kind, NULL);
+}
+
+int skH_setNative (skH *map, symbol *key, skE_natOp *native)
+{
+	return native && set(map, key, NULL, SKH_NATIVE, native);
+}
+
+int skH_hide (skH *map, symbol *key)
+{
+	return set(map, key, NULL, SKH_HIDDEN, NULL);
+}
+
+skH *skH_copy (const skH *map)
+{
+	skH *copy = skH_new(map->ancestor);
+	entry *node;
+	skO *value;
+	size_t i;
+
+	if (!copy)
+		return NULL;
+	for (i = 0; i < map->capacity; i++) {
+		for (node = map->buckets[i]; node; node = node->next) {
+			value = node->binding.value ? skO_clone(node->binding.value) : NULL;
+			if (!set(copy, node->binding.key, value, node->binding.kind, node->binding.native)) {
+				if (value)
+					skO_free(value);
+				skH_free(copy);
+				return NULL;
+			}
+		}
+	}
+	return copy;
 }

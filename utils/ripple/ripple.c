@@ -43,6 +43,8 @@ static skO *text_new (const char *text)
 	skO *list = skO_list_new();
 	skO **tail = &list->data.list;
 
+	/* External text is data, not a closure over the controller's current step. */
+	list->scope = skL_new(NULL);
 	while (text && *text) {
 		*tail = skO_character_new(*text++);
 		tail = &(*tail)->next;
@@ -149,6 +151,7 @@ static skO *stack_view (skE *env)
 	int limit = view_limit(env, 2, 256);
 
 	list = skO_list_new();
+	list->scope = skL_new(NULL);
 	tail = &list->data.list;
 	skO_free(skE_stackPop(env));
 	skO_free(skE_stackPop(env));

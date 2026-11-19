@@ -1,6 +1,6 @@
 /* Exception contracts. Run from the repository root:
  * cc -std=c99 -g -fsanitize=address,undefined -I. \
- *    test/exceptions.c env.c parser.c objects.c -lm -o /tmp/shirka-exceptions
+ *    test/exceptions.c env.c parser.c objects.c scope.c hashmap.c -lm -o /tmp/shirka-exceptions
  * /tmp/shirka-exceptions
  */
 #include <assert.h>

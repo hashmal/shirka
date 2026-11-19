@@ -82,3 +82,10 @@ Only this optional target requires GNU Readline. Editing, multiline input,
 history, commands, recovery behavior, and licensing/build implications are
 documented in `utils/ripple/README.md`. Run `make test-ripple` for its C and
 pseudo-terminal checks. The original `examples/repl.shk` is still available.
+
+Lexical-scoping experiment
+--------------------------
+
+This branch uses snapshot lexical scopes carried by lists, including nested
+literals and generated code. See `doc/lexical-scoping.md` for semantics, breaking
+changes, ownership rules, dotted fields, recursion, and the original RFC.

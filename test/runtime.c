@@ -1,6 +1,6 @@
 /* Native operand validation. Run from the repository root:
  * cc -std=c99 -g -fsanitize=address,undefined -I. \
- *    test/runtime.c env.c parser.c objects.c -lm -o /tmp/shirka-runtime-test
+ *    test/runtime.c env.c parser.c objects.c scope.c hashmap.c -lm -o /tmp/shirka-runtime-test
  * /tmp/shirka-runtime-test
  */
 #include <assert.h>

@@ -422,6 +422,7 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 
 	++*next;
 	list = skO_list_new();
+	list->literal = 1;
 
 	if ((status = setjmp(string_error))) {
 		skO_free(list);
@@ -456,6 +457,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 	if (delim && *src != delim[0])
 		return NULL;
 	list = skO_list_new();
+	list->literal = 1;
 
 	if ((status = setjmp(pe))) {
 		if (prefixed)

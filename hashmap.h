@@ -3,21 +3,27 @@
 
 #include "shirka.h"
 
-typedef struct skH skH;
 
 typedef enum {
 	SKH_VALUE,
-	SKH_OPERATION
+	SKH_OPERATION,
+	SKH_NATIVE,
+	SKH_HIDDEN
 } skH_kind;
 
 typedef struct {
 	symbol *key;
 	skO *value;
 	skH_kind kind;
+	skE_natOp *native;
 } skH_binding;
 
 /* The optional ancestor is borrowed, immutable, and must outlive this map.
  * Allocation failure returns NULL. Freeing NULL is allowed. */
+skH *skH_copy (const skH *map);
+int skH_setNative (skH *map, symbol *key, skE_natOp *native);
+int skH_hide (skH *map, symbol *key);
+
 skH *skH_new (skH *ancestor);
 void skH_free (skH *map);
 

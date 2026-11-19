@@ -401,7 +401,11 @@ SK_INTRINSIC skI_parse (skE *env)
 		longjmp(env->jmp, 1);
 	}
 
-	skE_stackPush(env, skO_parse(&cursor, jmp, NULL));
+	{
+		skO *parsed = skO_parse(&cursor, jmp, NULL);
+		skO_capture(parsed, env->scope->bindings);
+		skE_stackPush(env, parsed);
+	}
 
 	free(str);
 	skO_free(list);
@@ -525,6 +529,8 @@ SK_INTRINSIC skI_cons (skE *env)
 	skE_stackPop(env);
 	skE_stackPop(env);
 
+	if (obj->tag == SKO_LIST)
+		obj->literal = 0;
 	obj->next = list->data.list;
 	list->data.list = obj;
 
@@ -545,6 +551,8 @@ SK_INTRINSIC skI_uncons (skE *env)
 	obj = list->data.list;
 	list->data.list = obj->next;
 	obj->next = NULL;
+	if (obj->tag == SKO_LIST)
+		obj->literal = 0;
 
 	skE_stackPush(env, list);
 	skE_stackPush(env, obj);
@@ -664,13 +672,16 @@ SK_INTRINSIC skI_try (skE *env)
 
 	if (setjmp(local->jmp)) {
 		/* Keep the result shape identical on both paths. */
-		skE_stackPush(env, skO_list_new());
+		result = skO_list_new();
+		skO_capture(result, env->scope->bindings);
+		skE_stackPush(env, result);
 		skE_stackPush(env, skO_quoted_symbol_new("$try/failed"));
 	} else {
 		skE_execList(local, action, 1);
 		result = skO_list_new();
 		result->data.list = local->stack;
 		local->stack = NULL;
+		skO_capture(result, env->scope->bindings);
 		skE_stackPush(env, result);
 		skE_stackPush(env, skO_quoted_symbol_new("$try/ok"));
 	}

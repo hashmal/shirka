@@ -1,12 +1,14 @@
 CFLAGS+=-std=c99 -pedantic -Wall -Wextra -Wdeclaration-after-statement
 
 shirka: Makefile
-env.o: env.c intrinsics.c shirka.h
+env.o: env.c intrinsics.c shirka.h hashmap.h
 objects.o: objects.c shirka.h
+scope.o: scope.c shirka.h hashmap.h
+hashmap.o: hashmap.c hashmap.h shirka.h
 parser.o: parser.c shirka.h
 
-shirka: shirka.c shirka.h env.o objects.o parser.o intrinsics.c
-	$(CC) $(CFLAGS) -o shirka shirka.c env.o objects.o parser.o
+shirka: shirka.c shirka.h env.o objects.o parser.o scope.o hashmap.o intrinsics.c
+	$(CC) $(CFLAGS) -o shirka shirka.c env.o objects.o parser.o scope.o hashmap.o
 
 .PHONY: clean test test-reclamation test-harness
 
@@ -14,14 +16,24 @@ clean:
 	rm -f *.o
 	rm -f shirka utils/ripple/ripple
 
-test: shirka test-harness test-hashmap
+test: shirka test-harness test-hashmap test-lexical-no-tail
 	./shirka test/parser.shk
 	./shirka test/operations.shk
 	./shirka test/ansi.shk
 	./shirka test/ripple-highlight.shk
+	./shirka test/lexical.shk
+
+.PHONY: test-lexical-no-tail
+test-lexical-no-tail:
+	@set -e; \
+	build_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$build_dir"' 0; \
+	$(CC) $(CFLAGS) -DSK_NO_TAIL -I. shirka.c env.c objects.c parser.c \
+		scope.c hashmap.c -lm -o "$$build_dir/shirka"; \
+	"$$build_dir/shirka" test/lexical.shk
 
 .PHONY: test-hashmap
-test-hashmap: env.o objects.o parser.o
+test-hashmap: env.o objects.o parser.o scope.o hashmap.o
 	@set -e; \
 	build_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$build_dir"' 0; \
@@ -29,7 +41,7 @@ test-hashmap: env.o objects.o parser.o
 		-Dmalloc=skH_test_alloc -Dfree=skH_test_free \
 		-c hashmap.c -o "$$build_dir/hashmap.o"; \
 	$(CC) $(CFLAGS) -I. test/hashmap.c "$$build_dir/hashmap.o" \
-		env.o objects.o parser.o -lm -o "$$build_dir/test"; \
+		env.o objects.o parser.o scope.o -lm -o "$$build_dir/test"; \
 	"$$build_dir/test"
 
 # Count allocations independently of the Shirka test framework.
@@ -37,7 +49,7 @@ test-reclamation:
 	@set -e; \
 	build_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$build_dir"' 0; \
-	for source in env objects parser; do \
+	for source in env objects parser scope hashmap; do \
 		$(CC) $(CFLAGS) -I. -include test/reclamation.h \
 			-Dmalloc=sk_test_alloc -Dfree=sk_test_free \
 			-c $$source.c -o "$$build_dir/$$source.o"; \
@@ -62,17 +74,17 @@ RIPPLE_LIBS ?= $(if $(READLINE_PREFIX),-L$(READLINE_PREFIX)/lib) -lreadline -lm
 .PHONY: ripple
 ripple: utils/ripple/ripple
 
-utils/ripple/ripple: utils/ripple/ripple.c utils/ripple/terminal.c utils/ripple/ripple.h utils/ripple/ripple.shk utils/ripple/highlight.shk lib/ansi.shk env.o objects.o parser.o
+utils/ripple/ripple: utils/ripple/ripple.c utils/ripple/terminal.c utils/ripple/ripple.h utils/ripple/ripple.shk utils/ripple/highlight.shk lib/ansi.shk env.o objects.o parser.o scope.o hashmap.o
 	$(CC) $(CFLAGS) $(RIPPLE_CPPFLAGS) -DRIPPLE_HOME='"$(CURDIR)"' \
 		-o $@ utils/ripple/ripple.c utils/ripple/terminal.c \
-		env.o objects.o parser.o $(RIPPLE_LIBS)
+		env.o objects.o parser.o scope.o hashmap.o $(RIPPLE_LIBS)
 
 .PHONY: test-ripple test-ripple-reclamation
 test-ripple: ripple test-ripple-reclamation
 	@set -e; \
 	build_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$build_dir"' 0; \
-	$(CC) $(CFLAGS) -I. utils/ripple/test.c env.o objects.o parser.o \
+	$(CC) $(CFLAGS) -I. utils/ripple/test.c env.o objects.o parser.o scope.o hashmap.o \
 		-lm -lutil -o "$$build_dir/test"; \
 	"$$build_dir/test"
 
@@ -81,7 +93,7 @@ test-ripple-reclamation:
 	@set -e; \
 	build_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$build_dir"' 0; \
-	for source in env objects parser; do \
+	for source in env objects parser scope hashmap; do \
 		$(CC) $(CFLAGS) -I. -include test/reclamation.h \
 			-Dmalloc=sk_test_alloc -Dfree=sk_test_free \
 			-c $$source.c -o "$$build_dir/$$source.o"; \

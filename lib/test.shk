@@ -6,64 +6,64 @@
 -- Assertions execute quotations on isolated stacks. A failed assertion aborts
 -- the suite immediately; an uncaught abort makes the interpreter exit nonzero.
 
+-- Both comparison assertions require exactly two resulting values.
+(=> $test/pair) [
+  -> $test/op
+  $test/op List? not [
+    "Assertion requires a quotation." puts abort
+  ] !?
+  try
+  (rescue) [
+    << "Unexpected error in assertion:" puts $test/op puts abort
+  ]
+  length? 2 = not [
+    "Comparison requires exactly two results:" puts $test/op puts abort
+  ] !?
+]
+
+(=> assert_equal) [
+  -> $test/op
+  $test/op $test/pair
+  uncons -> $test/expected
+  uncons -> $test/result
+  <<
+  $test/result $test/expected = not [
+    "Equality failed:" puts
+    "  Expected: " print $test/expected puts
+    "    Result: " print $test/result puts
+    "      Code: " print $test/op puts
+    abort
+  ] !?
+]
+
+(=> assert_different) [
+  -> $test/op
+  $test/op $test/pair
+  uncons -> $test/expected
+  uncons -> $test/result
+  <<
+  $test/result $test/expected = [
+    "Difference failed:" puts
+    "Both values: " print $test/result puts
+    "      Code: " print $test/op puts
+    abort
+  ] !?
+]
+
+(=> assert_error) [
+  -> $test/op
+  $test/op List? not [
+    "Assertion requires a quotation." puts abort
+  ] !?
+  try
+  :$try/failed = not [
+    "Error was expected but did not happen:" puts $test/op puts abort
+  ] !?
+  <<
+]
+
 (=> test/run) [
   -> $test/suite
-
-  -- Both comparison assertions require exactly two resulting values.
-  (=> $test/pair) [
-    $test/op List? not [
-      "Assertion requires a quotation." puts abort
-    ] !?
-    try
-    (rescue) [
-      << "Unexpected error in assertion:" puts $test/op puts abort
-    ]
-    length? 2 = not [
-      "Comparison requires exactly two results:" puts $test/op puts abort
-    ] !?
-  ]
-
-  (=> assert_equal) [
-    -> $test/op
-    $test/pair
-    uncons -> $test/expected
-    uncons -> $test/result
-    <<
-    $test/result $test/expected = not [
-      "Equality failed:" puts
-      "  Expected: " print $test/expected puts
-      "    Result: " print $test/result puts
-      "      Code: " print $test/op puts
-      abort
-    ] !?
-  ]
-
-  (=> assert_different) [
-    -> $test/op
-    $test/pair
-    uncons -> $test/expected
-    uncons -> $test/result
-    <<
-    $test/result $test/expected = [
-      "Difference failed:" puts
-      "Both values: " print $test/result puts
-      "      Code: " print $test/op puts
-      abort
-    ] !?
-  ]
-
-  (=> assert_error) [
-    -> $test/op
-    $test/op List? not [
-      "Assertion requires a quotation." puts abort
-    ] !?
-    try
-    :$try/failed = not [
-      "Error was expected but did not happen:" puts $test/op puts abort
-    ] !?
-    <<
-  ]
-
   $test/suite List? not [
     "Test suite requires a quotation." puts abort
   ] !?

@@ -1,0 +1,46 @@
+"lib/test.shk" with
+
+(test/run) [
+  [ 10 -> x [x] => read-x 20 -> x read-x 10 ] assert_equal
+  [ 10 -> x [x] => read-x <- x << read-x 10 ] assert_equal
+  [ 10 -> x [x] => read-x [99 -> x read-x] ! 10 ] assert_equal
+  [ [missing] => read-missing 42 -> missing read-missing ] assert_error
+  [ [secret] => target [42 -> secret target] => caller caller ] assert_error
+  [ 42 -> x [<- x x] ! ] assert_error
+  [ 42 -> x [<- x] => take-x take-x take-x = TRUE ] assert_equal
+  [ [-> n [n +]] => make-adder 10 make-adder => add-ten 5 add-ten 15 ] assert_equal
+  [ 10 -> x [20 -> x [x]] => outer outer ! 20 ] assert_equal
+  [ 10 -> x [[x]] uncons >< << ! 10 ] assert_equal
+  [ 10 -> x [[x]] -> branches 20 -> branches.x
+    branches uncons >< << ! 10 ] assert_equal
+  [ 10 -> x [[x]] -> branches 20 -> branches.x branches ! ! 20 ] assert_equal
+  [ 10 -> x [x] -> old 20 -> x [] old cons ! ! 10 ] assert_equal
+  [ 42 -> x [] :x unquote cons ! 42 ] assert_equal
+  [ [] -> code 42 -> x <- code :x unquote cons ! ] assert_error
+  [ 42 -> x "x" $parse 99 -> x ! 42 ] assert_equal
+  [ 10 -> x "20 -> x [x]" $parse ! ! 20 ] assert_equal
+  [ [] -> record 42 -> record.answer record.answer 42 ] assert_equal
+  [ [] -> record [] -> record.child 42 -> record.child.answer
+    record.child.answer 42 ] assert_equal
+  [ [] -> record 10 -> record.x record -> other 20 -> other.x record.x 10 ] assert_equal
+  [ [] -> record [2 *] => record.double 21 record.double 42 ] assert_equal
+  [ [] -> record [42] -> record.code record.code ! 42 ] assert_equal
+  [ [] -> record [record.answer] => record.method 42 -> record.answer record.method ] assert_error
+  [ [>> 0 > (if) [ [1 - countdown] [<< 42] ]] => countdown 100 countdown 42 ] assert_equal
+  -- A closure can outlive the recursive invocation that supplied its self name.
+  [ [ [recur] ] => recur recur ! List? >< << TRUE ] assert_equal
+  [ [42 -> local local] => operation operation operation = TRUE ] assert_equal
+  [ 10 -> x [<- x << 20 -> x x] ! 20 ] assert_equal
+  [ [] -> record 1 -> record.x 2 -> record.x record.x 2 ] assert_equal
+  [ [] -> record 1 -> record.x <- record.x 1 ] assert_equal
+  [ [] -> record 1 -> record.x <- record.x << record.x ] assert_error
+  [ [] -> record 1 -> record.x record -> other <- other.x << record.x 1 ] assert_equal
+  [ [] -> record [x] => record.method 42 -> record.method.x record.method 42 ] assert_equal
+  [ 42 -> x [x] -> code 20 -> code.x code ! 20 ] assert_equal
+  [ [missing-later] => first [42] => missing-later first ] assert_error
+  [ [] try << 42 -> x :x unquote cons ! ] assert_error
+  [ 42 -> x [] try << :x unquote cons ! 42 ] assert_equal
+  [ [] -> record [] -> record.x 42 -> record.x.value
+    record.x -> record.x.y record.x.y.value 42 ] assert_equal
+  [ [] -> record [] -> record.x <- record.x -> record.x.y ] assert_error
+]

@@ -166,12 +166,56 @@ static void failures (void)
 	skH_free(map);
 }
 
+static skO *native (skE *env)
+{
+	(void)env;
+	return NULL;
+}
+
+static void snapshots (void)
+{
+	skH *ancestor = skH_new(NULL);
+	skH *map = skH_new(ancestor);
+	skH *copy;
+	skO *list = skO_list_new();
+	const skH_binding *binding;
+	size_t baseline;
+	int i;
+
+	assert(ancestor && map);
+	assert(skH_set(ancestor, key(0), skO_number_new(1), SKH_VALUE));
+	assert(skH_hide(map, key(0)));
+	assert(skH_setNative(map, key(1), native));
+	sk_list_append(list, skO_number_new(42));
+	assert(skH_set(map, key(2), list, SKH_OPERATION));
+	baseline = allocations;
+	for (i = 1; i <= 5; i++) {
+		fail_after = i;
+		assert(!skH_copy(map));
+		assert(allocations == baseline);
+	}
+	copy = skH_copy(map);
+	assert(copy);
+	assert(skH_get(copy, key(0))->kind == SKH_HIDDEN);
+	assert(skH_get(copy, key(1))->native == native);
+	binding = skH_get(copy, key(2));
+	assert(binding->kind == SKH_OPERATION && binding->value != list);
+	assert(binding->value->data.list->data.number == 42);
+	assert(skH_set(copy, key(0), skO_number_new(2), SKH_VALUE));
+	assert(skH_get(map, key(0))->kind == SKH_HIDDEN);
+	assert(skH_get(ancestor, key(0))->value->data.number == 1);
+	skH_free(copy);
+	skH_free(map);
+	skH_free(ancestor);
+}
+
 int main (void)
 {
 	growth(); assert(!allocations);
 	ancestry(); assert(!allocations);
 	collisions(); assert(!allocations);
 	failures(); assert(!allocations);
+	snapshots(); assert(!allocations);
 	skH_free(NULL);
 	assert(!skH_get(NULL, key(0)));
 	puts("Hashmap lookup, ownership, growth, ancestors, and allocation failures passed.");

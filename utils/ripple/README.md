@@ -94,9 +94,9 @@ increment
 ```
 
 The last example explicitly requests Shirka's normal isolated-stack `try`.
-Repeated `=>` definitions in the same session still follow Shirka's existing
-no-redefinition rule. Rebinding values with `->` retains older bindings as the
-interpreter currently specifies; ripple does not change this language behavior.
+On this lexical-scoping branch, `=>` and `->` replace the current binding.
+Existing operations and list values retain snapshot captures of prior bindings;
+they do not pick up later replacements. See `doc/lexical-scoping.md`.
 
 ## Commands
 
