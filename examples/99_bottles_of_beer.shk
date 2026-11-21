@@ -8,8 +8,8 @@
 
 (=> bottle-plural) [ 1 = (if) [ [ "bottle" ] [ "bottles" ] ] ]
 
-99 1 .. reverse
-(each)
+99
+(99 times)
   [ -> i
 
     i bottle-plural -> pluralized
@@ -24,4 +24,6 @@
       [ [ i 1 - -> i
           i bottle-plural -> pluralized
           i print " " print pluralized print " of beer on the wall!\n" puts ]
-        [ "No more bottles of beer on the wall!" puts ] ] ]
+        [ "No more bottles of beer on the wall!" puts ] ]
+    <- i 1 - ]
+<<

@@ -79,15 +79,16 @@ multiline literals. Folding follows indentation rather than computing exact
 bracket ranges. Prefix parentheses reorder tokens; the editor matches their
 physical delimiters without attempting to model that execution behavior.
 
-Apostrophes within identifiers (such as `foo'`), `.1` and `-.0` symbol names,
-and numbers ending in a dot follow the parser rather than another language's
-conventions. A dot is part of a name; this extension does not implement the
-proposed scoped-list field-access syntax.
+Apostrophes within identifiers (such as `foo'`) and numbers ending in a decimal
+point follow the parser. Dots are excluded from identifiers: `record.x.y` is a
+field path with independently highlighted separators and properties. Quoted
+paths retain symbol highlighting, and binding targets accept the same path
+syntax. `.1` and `-.0` are invalid; numeric fractions require a leading digit.
 
 ## Highlighting scopes
 
 Punctuation-only identifiers such as `!`, `!?`, `<<`, and custom `@@` words
-use `keyword.operator.shirka`. Mixed names such as `foo?`, `$parse`, and `.1`
+use `keyword.operator.shirka`. Mixed names such as `foo?` and `$parse`
 remain identifiers; quoted symbols such as `:!` keep their symbol highlighting.
 Targets after `=>` use `entity.name.function.definition.shirka`; targets after
 `->` and `<-` use `entity.name.variable.binding.shirka`, including when the

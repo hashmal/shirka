@@ -50,9 +50,9 @@ test('binding operators and names, including prefix definitions', () => {
 
 test('punctuation-only identifiers are operators, including user-defined names', () => {
     for (const name of ['!', '!?', '<<', '>>', '><', '+', '-', '*', '/', '%', '^',
-        '=', '<=', '>=', '..', '++', '_', '$->', '$=>', '$<-', '@@', '!~', "!'"])
+        '=', '<=', '>=', '++', '_', '$->', '$=>', '$<-', '@@', '!~', "!'"])
         has(name, name, 'keyword.operator.shirka');
-    for (const name of ['foo', 'foo?', 'x!', 'a.b', '.1', '-.0', '!x', '_1', '$parse'])
+    for (const name of ['foo', 'foo?', 'x!', 'a.b', '!x', '_1', '$parse'])
         assert.ok(!tokens(name).some(token => token.scopes.includes('keyword.operator.shirka')), name);
     has('!?-- comment', '!?', 'keyword.operator.shirka');
     for (const name of [':foo', ':!', ':!?', ':<<', ':@@']) {
@@ -79,7 +79,7 @@ test('binding targets override ordinary builtin and operator classifications', (
 test('numbers follow parser separators, not conventional numeric syntax', () => {
     for (const number of ['42', '-1', '0.', '3.14'])
         has(number, number, 'constant.numeric.shirka');
-    for (const name of ['.1', '-.0', 'foo\'', '$try/failed', 'a.b', '->', '=>', '<-'])
+    for (const name of ['foo\'', '$try/failed', 'a.b', '->', '=>', '<-'])
         assert.ok(!tokens(name).some(token => token.scopes.includes('constant.numeric.shirka')));
     has('foo\'', 'foo\'', 'variable.function.shirka');
     has('1abc', '1', 'invalid.illegal.token.shirka');
@@ -142,4 +142,18 @@ test('all repository examples, libraries, and suites tokenize without invalid to
         }
     }
     assert.ok(files >= 8);
+});
+
+test('dots separate path components instead of belonging to identifiers', () => {
+    has('record.x.y', 'record', 'variable.function.shirka');
+    has('record.x.y', '.', 'punctuation.accessor.dot.shirka');
+    has('record.x.y', 'x', 'variable.other.property.shirka');
+    has('record.x.y', 'y', 'variable.other.property.shirka');
+    has(':record.x', ':record.x', 'constant.other.symbol.shirka');
+    has('-> record.x', 'record.x', 'entity.name.variable.binding.shirka');
+    has('=> record.method', 'record.method', 'entity.name.function.definition.shirka');
+    for (const source of ['.', '..', '.x', '.1', '-.0', 'x.', 'x..y', 'x.1', ':x.', '-> .x'])
+        assert.ok(tokens(source).some(t => t.scopes.includes('invalid.illegal.token.shirka')), source);
+    const words = new RegExp(config.wordPattern, 'g');
+    assert.deepEqual('record.x'.match(words), ['record', 'x']);
 });

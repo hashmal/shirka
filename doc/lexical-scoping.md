@@ -102,9 +102,24 @@ clones the root value, copies shared dictionaries along the path, then publishes
 it. Copies of records and existing captured branches retain their old values.
 The root binding's operation/value kind is preserved during a field update.
 
-Names with leading/trailing dots or consecutive dots (including `..`) remain
-ordinary identifiers. Other dots delimit paths. Ancestor metadata cannot be
-assigned as a user field. Overlapping dotted assignments use the old source
+Dots are reserved path separators, not identifier characters. A path is one or
+more ordinary identifiers joined by adjacent dots, for example `record.child.x`.
+The same grammar applies to quoted paths (`:record.x`) and binding targets
+(`-> record.x`, `=> record.method`, `<- record.x`). Leading/trailing dots,
+consecutive dots, numeric-only components, and whitespace around a dot are parse
+errors. `.` and `..` are no longer valid operation names. Decimal numbers such as
+`0.5`, `-0.5`, and `1.` retain their numeric meaning; `.1` and `-.0` are invalid
+because the numeric grammar requires a leading digit. Strings and Character
+literals can still contain dots.
+
+The parser validates each path component separately, then serializes the full
+path into the existing Symbol/QuotedSymbol representation. This preserves
+quotation and generated-code operations without introducing a new value type;
+it does not make the dot part of an atomic identifier again. Keys selected from
+a path contain only that component's name.
+
+Ancestor metadata cannot be assigned as a user field. Overlapping dotted
+assignments use the old source
 value; they cannot relink an owner inside itself. There is no live prototype or
 automatic `self`/receiver binding for methods.
 

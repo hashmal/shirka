@@ -50,7 +50,8 @@ int main(void)
 	char *invalid[] = {
 		"\"abc", "\"abc\\", "'", "'\\", "\"\\q\"",
 		"[ : ]", "[[ : ]]", "(print) [ : ]", "[1 2", "(puts",
-		"(puts)", "]", ")"
+		"(puts)", "]", ")", ".", "..", ".x", "x.", "x..y", "x.1",
+		":x.", ":x..y", "-> .x", "=> x.", "<- x..y", "x.--comment"
 	};
 	size_t i;
 
@@ -58,6 +59,9 @@ int main(void)
 	check("1 2 3", 1);
 	check("[1 [2]] \"abc\" '\\n", 1);
 	check("(=> foo) [42]", 1);
+	check("foo.bar.baz :foo.bar -> foo.bar => foo.bar <- foo.bar", 1);
+	check("foo.bar-- comment", 1);
+	check("'. \"a.b\" 0.5 -0.5 1.", 1);
 	check_comment("foo-- comment", SKO_SYMBOL);
 	check_comment(":foo-- comment", SKO_QSYMBOL);
 
@@ -65,6 +69,16 @@ int main(void)
 	token[SYMBOL_MAX_LENGTH - 1] = 0;
 	check(token, 1);
 	quoted[0] = ':';
+	strcpy(quoted + 1, token);
+	check(quoted, 1);
+	token[SYMBOL_MAX_LENGTH - 1] = 'a';
+	token[SYMBOL_MAX_LENGTH] = 0;
+	check(token, 0);
+	/* Bound the serialized path as a whole, not just each component. */
+	memset(token, 'a', SYMBOL_MAX_LENGTH - 1);
+	token[SYMBOL_MAX_LENGTH / 2 - 1] = '.';
+	token[SYMBOL_MAX_LENGTH - 1] = 0;
+	check(token, 1);
 	strcpy(quoted + 1, token);
 	check(quoted, 1);
 	token[SYMBOL_MAX_LENGTH - 1] = 'a';

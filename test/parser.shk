@@ -31,9 +31,9 @@
 
   [ "0.1"     $parse                      [0.1]                 ] assert_equal
   [ "0.1"     $parse  <>type              :Number               ] assert_equal
-  [ ".1"      $parse                      [.1]                  ] assert_equal
+  [ ".1"      $parse                                            ] assert_error
   [ "0."      $parse                      [0]                   ] assert_equal
-  [ "-.0"     $parse                      [-.0]                 ] assert_equal
+  [ "-.0"     $parse                                            ] assert_error
 
   [ "'a"      $parse                      ['a]                  ] assert_equal
   [ "'a"      $parse  <>type              :Character            ] assert_equal
@@ -60,4 +60,32 @@
   [ "'\\8" $parse ] assert_error
   [ "'\\" $parse ] assert_error
   [ "\"\\03" $parse ] assert_error
+]
+
+(test/run) [
+  [ "record.x" $parse [record.x] ] assert_equal
+  [ ":record.x" $parse [:record.x] ] assert_equal
+  [ "-> record.x" $parse [:record.x $->] ] assert_equal
+  [ "=> record.x" $parse [:record.x $=>] ] assert_equal
+  [ "<- record.x" $parse [:record.x $<-] ] assert_equal
+  [ "record.x.y" $parse [record.x.y] ] assert_equal
+  [ "record.x-- comment" $parse [record.x] ] assert_equal
+  [ "record.+" $parse [record.+] ] assert_equal
+  [ "." $parse ] assert_error
+  [ ".." $parse ] assert_error
+  [ ".x" $parse ] assert_error
+  [ "x." $parse ] assert_error
+  [ "x..y" $parse ] assert_error
+  [ "x.1" $parse ] assert_error
+  [ "x. y" $parse ] assert_error
+  [ "x .y" $parse ] assert_error
+  [ "x.-- comment" $parse ] assert_error
+  [ ":x." $parse ] assert_error
+  [ ":x..y" $parse ] assert_error
+  [ "-> x." $parse ] assert_error
+  [ "=> .x" $parse ] assert_error
+  [ "<- x..y" $parse ] assert_error
+  [ "1.2.3" $parse ] assert_error
+  [ "'." $parse ['.] ] assert_equal
+  [ "\"a.b..c\"" $parse ["a.b..c"] ] assert_equal
 ]

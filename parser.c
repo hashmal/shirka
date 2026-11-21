@@ -31,6 +31,7 @@ To enable the printing of debug information, define the constant
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 #include <setjmp.h>
 #include "shirka.h"
 
@@ -46,7 +47,7 @@ The following macros are used by token extractors as character categories.
 
 #define IDENTIFIER_START(c) (isalpha((unsigned char)(c)) || c == '_'                          \
 	|| c == '!' || c == '#' || c == '$'  || c == '%' || c == '&'         \
-	|| c == '*' || c == '+' || c == ','  || c == '-' || c == '.'         \
+	|| c == '*' || c == '+' || c == ','  || c == '-'         \
 	|| c == '/' || c == ';' || c == '<'  || c == '=' || c == '>'         \
 	|| c == '?' || c == '@' || c == '\\' || c == '^' || c == '|'         \
 	|| c == '~')
@@ -71,6 +72,7 @@ skO *parse_character         (char **next, jmp_buf jmp);
 skO *parse_character_literal (char **next, jmp_buf jmp);
 skO *parse_qidentifier       (char **next, jmp_buf jmp);
 skO *parse_identifier        (char **next, jmp_buf jmp);
+skO *parse_path              (char **next, jmp_buf jmp);
 skO *parse_op_def            (char **next, jmp_buf jmp);
 skO *parse_obj_reserve       (char **next, jmp_buf jmp);
 skO *parse_obj_restore       (char **next, jmp_buf jmp);
@@ -257,48 +259,18 @@ skO *parse_character (char **next, jmp_buf jmp)
 
 skO *parse_qidentifier (char **next, jmp_buf jmp)
 {
-	char *c = *next;
-	char buffer[SYMBOL_MAX_LENGTH];
-	size_t i = 0;
+	char *cursor = *next;
+	skO *symbol;
 
-	if (*c != ':')
-		goto failure;
-
-	c++;
-
-	if (!IDENTIFIER_START(*c))
-		goto failure;
-
-	buffer[i] = *c;
-	i++;
-	c++;
-
-	while (1) {
-		if (c[0] == '-' && c[1] == '-')
-			break;
-
-		if (IDENTIFIER_CONT(*c)) {
-			if (i >= sizeof(buffer) - 1) {
-				fprintf(stderr, "PANIC! Token too long.\n");
-				longjmp(jmp, 1);
-			}
-			buffer[i] = *c;
-			i++;
-			c++;
-		} else {
-			break;
-		}
-	}
-
-	buffer[i] = 0;
-	*next = c;
-	#ifdef SK_PARSER_DEBUG
-	printf("Parsed QIDENTIFIER: %s\n", buffer);
-	#endif
-	return skO_quoted_symbol_new(buffer);
-
-failure:
-	return NULL;
+	if (*cursor != ':')
+		return NULL;
+	cursor++;
+	symbol = parse_path(&cursor, jmp);
+	if (!symbol)
+		return NULL;
+	symbol->tag = SKO_QSYMBOL;
+	*next = cursor;
+	return symbol;
 }
 
 skO *parse_identifier (char **next, jmp_buf jmp)
@@ -342,6 +314,49 @@ failure:
 	return NULL;
 }
 
+/* Dot is syntax between identifiers, never an identifier character. Keep paths
+ * serialized in symbols so quotation, cons and reserve operations stay uniform. */
+skO *parse_path (char **next, jmp_buf jmp)
+{
+	char *cursor = *next;
+	char *start;
+	char *end;
+	char buffer[SYMBOL_MAX_LENGTH];
+	size_t length;
+	skO *component;
+
+	component = parse_identifier(&cursor, jmp);
+	if (!component)
+		return NULL;
+	if (*cursor != '.') {
+		*next = cursor;
+		return component;
+	}
+	skO_free(component);
+	while (*cursor == '.') {
+		start = ++cursor;
+		if (!IDENTIFIER_START(*cursor) || (cursor[0] == '-' && cursor[1] == '-')) {
+			fprintf(stderr, "PANIC! Dot must separate two identifiers.\n");
+			longjmp(jmp, SK_PARSE_ERROR);
+		}
+		/* Check the complete path's bound before allocating another component. */
+		end = start + 1;
+		while (IDENTIFIER_CONT(*end) && !(end[0] == '-' && end[1] == '-'))
+			end++;
+		if ((size_t)(end - *next) >= sizeof(buffer)) {
+			fprintf(stderr, "PANIC! Path too long.\n");
+			longjmp(jmp, SK_PARSE_ERROR);
+		}
+		component = parse_identifier(&cursor, jmp);
+		skO_free(component);
+	}
+	length = (size_t)(cursor - *next);
+	memcpy(buffer, *next, length);
+	buffer[length] = 0;
+	*next = cursor;
+	return skO_symbol_new(buffer);
+}
+
 skO *parse_op_def (char **next, jmp_buf jmp)
 {
 	char *src = *next;
@@ -351,7 +366,7 @@ skO *parse_op_def (char **next, jmp_buf jmp)
 		src++;
 		src++;
 		consume_leading(&src);
-		sym = parse_identifier(&src, jmp);
+		sym = parse_path(&src, jmp);
 		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
@@ -374,7 +389,7 @@ skO *parse_obj_reserve (char **next, jmp_buf jmp)
 		src++;
 		src++;
 		consume_leading(&src);
-		sym = parse_identifier(&src, jmp);
+		sym = parse_path(&src, jmp);
 		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
@@ -397,7 +412,7 @@ skO *parse_obj_restore (char **next, jmp_buf jmp)
 		src++;
 		src++;
 		consume_leading(&src);
-		sym = parse_identifier(&src, jmp);
+		sym = parse_path(&src, jmp);
 		if (sym) {
 			*next = src;
 			sym->tag = SKO_QSYMBOL;
@@ -538,7 +553,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		if ((obj = parse_string_literal(&src, pe))
 			|| (obj = parse_number(&src, pe))
 			|| (obj = parse_qidentifier(&src, pe))
-			|| (obj = parse_identifier(&src, pe))
+			|| (obj = parse_path(&src, pe))
 			|| (obj = parse_character_literal(&src, pe))
 			|| (obj = skO_parse(&src, pe, "[]")))
 			goto matched;

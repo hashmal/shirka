@@ -43,4 +43,5 @@
   [ [] -> record [] -> record.x 42 -> record.x.value
     record.x -> record.x.y record.x.y.value 42 ] assert_equal
   [ [] -> record [] -> record.x <- record.x -> record.x.y ] assert_error
+  [ [] -> record 42 -> record.x [] :record.x unquote cons ! 42 ] assert_equal
 ]

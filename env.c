@@ -82,8 +82,6 @@ static symbol *part (const char *name, size_t length)
 
 static const char *path_dot (const char *name)
 {
-	if (!*name || *name == '.' || name[strlen(name) - 1] == '.' || strstr(name, ".."))
-		return NULL;
 	return strchr(name, '.');
 }
 

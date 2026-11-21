@@ -155,20 +155,6 @@
   [ [+] 0 fold ]
 
 ------------------------------------------------------------------------------
-(=> ..)
--- Expected: .. Number Number
--- Build a list containing elements from number to number (inclusive).
-  [ -> low -> high
-    [] <- high >>
-
-    ([low >=] while)
-      [ -> current
-        current cons
-        <- current 1 -
-        >> ]
-    << ]
-
-------------------------------------------------------------------------------
 (=> filter)
 -- Expected: .. List List
 -- First list is executed on every element of the second list; it must push a

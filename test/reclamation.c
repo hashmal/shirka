@@ -80,12 +80,15 @@ static void exercise (void)
 		"\"a\" \"b\" [:bold :blue] ansi-style ++ [:dim :red] ansi-style", 1);
 	parse("'\\0334 \"\\0x\" '\\377", 1);
 	parse("'\\400", 0);
+	parse("record.child.x :record.child.x -> record.child.x", 1);
+	parse("record..x", 0);
+	parse("(puts) [record.]", 0);
 	run("\"lib/prelude.shk\" with \"lib/test.shk\" with "
 		"[[1 1] assert_equal [abort] assert_error] test/run", 1);
 	run("\"lib/prelude.shk\" with \"lib/test.shk\" with "
 		"[[[1 2] assert_equal] test/run] try", 1);
 	run("\"1 2 3\" $parse", 1);
-	run("\"lib/prelude.shk\" with 10 1 .. [+] 0 fold", 1);
+	run("\"lib/prelude.shk\" with [1 2 3 4 5 6 7 8 9 10] [+] 0 fold", 1);
 	run("[1 -> x [2 -> y 3]] ! 4", 1);
 	run("1 missing 2 [3]", 0);
 	run("[1 -> x [2 -> y missing 3] ! 4] ! 5", 0);
