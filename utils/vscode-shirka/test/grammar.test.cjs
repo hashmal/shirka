@@ -152,8 +152,17 @@ test('dots separate path components instead of belonging to identifiers', () => 
     has(':record.x', ':record.x', 'constant.other.symbol.shirka');
     has('-> record.x', 'record.x', 'entity.name.variable.binding.shirka');
     has('=> record.method', 'record.method', 'entity.name.function.definition.shirka');
-    for (const source of ['.', '..', '.x', '.1', '-.0', 'x.', 'x..y', 'x.1', ':x.', '-> .x'])
+    for (const source of ['.', '..', '.1', '-.0', 'x.', 'x..y', 'x.1', ':x.', '-> ..x'])
         assert.ok(tokens(source).some(t => t.scopes.includes('invalid.illegal.token.shirka')), source);
     const words = new RegExp(config.wordPattern, 'g');
     assert.deepEqual('record.x'.match(words), ['record', 'x']);
+});
+
+test('leading-dot paths select stack fields', () => {
+    has('.child.x', '.', 'punctuation.accessor.dot.shirka');
+    has('.child.x', 'child', 'variable.other.property.shirka');
+    has(':.x', ':.x', 'constant.other.symbol.shirka');
+    has('42 -> .x', '.x', 'entity.name.variable.binding.shirka');
+    has('[42] => .foo', '.foo', 'entity.name.function.definition.shirka');
+    has('<- .x', '.x', 'entity.name.variable.binding.shirka');
 });

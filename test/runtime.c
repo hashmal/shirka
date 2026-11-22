@@ -86,6 +86,16 @@ int main (void)
 	int tag;
 
 	skE_init(env);
+	skE_stackPush(env, skO_number_new(42));
+	skE_stackPush(env, skO_quoted_symbol_new(".x"));
+	expect_error(env, skI_defObject); /* Missing record: preserve both operands. */
+	skE_stackPush(env, skO_number_new(1));
+	skE_stackPush(env, skO_number_new(42));
+	skE_stackPush(env, skO_quoted_symbol_new(".x"));
+	expect_error(env, skI_defObject); /* Non-list receiver. */
+	skE_stackPush(env, skO_number_new(1));
+	skE_stackPush(env, skO_quoted_symbol_new(".x"));
+	expect_error(env, skI_undef);
 	for (i = 0; i < sizeof(numbers) / sizeof(numbers[0]); i++)
 		check_binary (env, numbers[i], SKO_NUMBER);
 	check_binary (env, skI_and, SKO_BOOLEAN);

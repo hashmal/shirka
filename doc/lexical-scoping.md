@@ -105,9 +105,11 @@ The root binding's operation/value kind is preserved during a field update.
 Dots are reserved path separators, not identifier characters. A path is one or
 more ordinary identifiers joined by adjacent dots, for example `record.child.x`.
 The same grammar applies to quoted paths (`:record.x`) and binding targets
-(`-> record.x`, `=> record.method`, `<- record.x`). Leading/trailing dots,
-consecutive dots, numeric-only components, and whitespace around a dot are parse
-errors. `.` and `..` are no longer valid operation names. Decimal numbers such as
+(`-> record.x`, `=> record.method`, `<- record.x`). A single leading dot selects
+the record on the stack, as described below. Trailing or consecutive dots,
+numeric-only components, and whitespace after a dot are parse errors. `x .y` is
+two operations (push `x`, then select `.y`), not one named path. `.` and `..`
+remain invalid operation names. Decimal numbers such as
 `0.5`, `-0.5`, and `1.` retain their numeric meaning; `.1` and `-.0` are invalid
 because the numeric grammar requires a leading digit. Strings and Character
 literals can still contain dots.
@@ -117,6 +119,37 @@ path into the existing Symbol/QuotedSymbol representation. This preserves
 quotation and generated-code operations without introducing a new value type;
 it does not make the dot part of an atomic identifier again. Keys selected from
 a path contain only that component's name.
+
+### Stack-relative fields
+
+```shirka
+(!)[1 -> x 2 -> y []]  -- leave a record on the stack
+.x puts               -- print 1; the record remains
+42 -> .x              -- consume 42 and update that record
+.x puts               -- print 42
+[.x 2 *] => .double    -- install an operation; keep the record
+.double puts          -- print 84; this body also leaves the record
+```
+
+The stack effects are `.x (record -- record value)` and
+`-> .x (record value -- record)`. Assignment consumes the value first, selecting
+the record immediately beneath it. `=> .method` follows the same rule for its
+quotation and stores an operation binding. `<- .x` restores the value while
+keeping the record and hiding the field. Nested paths such as `.child.x` preserve
+the outer record; missing intermediate fields are not created implicitly.
+
+Reads share named-path lookup; writes share named-path traversal and copy-on-write
+updates. A stack-relative write changes only the stack value's dictionary, not
+another reserve or capture from which that value was copied. Its sequence and
+position on the stack remain unchanged. Quoted paths (`:.x`) and generated code
+use the same rules. Missing/non-list receivers and missing read fields are
+catchable errors. Receiver validation precedes consuming assignment operands.
+
+The final binding retains normal value/operation behavior. Selecting an operation
+does not add a receiver argument or protect the record from its body: that body
+can deliberately consume or rearrange the record using normal stack operations.
+List creation and field lookup remain non-executing for ordinary value fields;
+there is no lazy initialization.
 
 Ancestor metadata cannot be assigned as a user field. Overlapping dotted
 assignments use the old source

@@ -84,6 +84,8 @@ point follow the parser. Dots are excluded from identifiers: `record.x.y` is a
 field path with independently highlighted separators and properties. Quoted
 paths retain symbol highlighting, and binding targets accept the same path
 syntax. `.1` and `-.0` are invalid; numeric fractions require a leading digit.
+Leading-dot paths such as `.x` and `.child.x` select stack fields and use the
+same property scopes. Binding targets accept `-> .x`, `=> .method`, and `<- .x`.
 
 ## Highlighting scopes
 

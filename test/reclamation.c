@@ -66,6 +66,9 @@ static void exercise (void)
 	skE *env;
 
 	run("1 2 3 [4 [5]]", 1);
+	run("[] 42 -> .x .x -> copy <- .x", 1);
+	run("[] [] -> .child 42 -> .child.x .child.x", 1);
+	run("[] 42 -> .missing.x", 0);
 	run("\"lib/prelude.shk\" with "
 		"[-> n [n +]] => make-adder 10 make-adder => add-ten 5 add-ten", 1);
 	run("\"lib/prelude.shk\" with "

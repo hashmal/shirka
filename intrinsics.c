@@ -41,12 +41,20 @@ void print_list (skO *list)
 	}
 }
 
+/* Assignment consumes its value first; the record below it is the receiver. */
+static void check_target (skE *env, skO *sym, size_t depth)
+{
+	skE_checkType(env, sym, SKO_QSYMBOL);
+	if (sym->data.sym->name[0] == '.')
+		skE_checkType(env, skE_stackPeek(env, depth), SKO_LIST);
+}
+
 SK_INTRINSIC skI_defOperation (skE *env)
 {
 	skO *sym = skE_stackPeek(env, 0);
 	skO *obj = skE_stackPeek(env, 1);
 
-	skE_checkType(env, sym, SKO_QSYMBOL);
+	check_target(env, sym, 2);
 	skE_checkType(env, obj, SKO_LIST);
 	skE_stackPop(env);
 	skE_stackPop(env);
@@ -60,7 +68,7 @@ SK_INTRINSIC skI_defObject (skE *env)
 	skO *sym = skE_stackPeek(env, 0);
 	skO *obj = skE_stackPeek(env, 1);
 
-	skE_checkType(env, sym, SKO_QSYMBOL);
+	check_target(env, sym, 2);
 	skE_stackPop(env);
 	skE_stackPop(env);
 	skE_defObject(env, sym, obj);
@@ -72,7 +80,7 @@ SK_INTRINSIC skI_undef (skE *env)
 {
 	skO *sym = skE_stackPeek(env, 0);
 
-	skE_checkType(env, sym, SKO_QSYMBOL);
+	check_target(env, sym, 1);
 	skE_stackPop(env);
 	skE_undef(env, sym);
 

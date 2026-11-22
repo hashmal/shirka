@@ -314,7 +314,7 @@ failure:
 	return NULL;
 }
 
-/* Dot is syntax between identifiers, never an identifier character. Keep paths
+/* Dot separates identifiers; an initial dot selects the stack record. Keep paths
  * serialized in symbols so quotation, cons and reserve operations stay uniform. */
 skO *parse_path (char **next, jmp_buf jmp)
 {
@@ -325,18 +325,20 @@ skO *parse_path (char **next, jmp_buf jmp)
 	size_t length;
 	skO *component;
 
-	component = parse_identifier(&cursor, jmp);
-	if (!component)
-		return NULL;
 	if (*cursor != '.') {
-		*next = cursor;
-		return component;
+		component = parse_identifier(&cursor, jmp);
+		if (!component)
+			return NULL;
+		if (*cursor != '.') {
+			*next = cursor;
+			return component;
+		}
+		skO_free(component);
 	}
-	skO_free(component);
 	while (*cursor == '.') {
 		start = ++cursor;
 		if (!IDENTIFIER_START(*cursor) || (cursor[0] == '-' && cursor[1] == '-')) {
-			fprintf(stderr, "PANIC! Dot must separate two identifiers.\n");
+			fprintf(stderr, "PANIC! Dot must be followed by an identifier.\n");
 			longjmp(jmp, SK_PARSE_ERROR);
 		}
 		/* Check the complete path's bound before allocating another component. */

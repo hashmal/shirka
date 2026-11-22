@@ -22,6 +22,7 @@ test: shirka test-harness test-hashmap test-lexical-no-tail
 	./shirka test/ansi.shk
 	./shirka test/ripple-highlight.shk
 	./shirka test/lexical.shk
+	./shirka test/stack-fields.shk
 
 .PHONY: test-lexical-no-tail
 test-lexical-no-tail:
@@ -30,7 +31,8 @@ test-lexical-no-tail:
 	trap 'rm -rf "$$build_dir"' 0; \
 	$(CC) $(CFLAGS) -DSK_NO_TAIL -I. shirka.c env.c objects.c parser.c \
 		scope.c hashmap.c -lm -o "$$build_dir/shirka"; \
-	"$$build_dir/shirka" test/lexical.shk
+	"$$build_dir/shirka" test/lexical.shk; \
+	"$$build_dir/shirka" test/stack-fields.shk
 
 .PHONY: test-hashmap
 test-hashmap: env.o objects.o parser.o scope.o hashmap.o

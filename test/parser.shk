@@ -73,19 +73,29 @@
   [ "record.+" $parse [record.+] ] assert_equal
   [ "." $parse ] assert_error
   [ ".." $parse ] assert_error
-  [ ".x" $parse ] assert_error
+  [ ".x" $parse [.x] ] assert_equal
   [ "x." $parse ] assert_error
   [ "x..y" $parse ] assert_error
   [ "x.1" $parse ] assert_error
   [ "x. y" $parse ] assert_error
-  [ "x .y" $parse ] assert_error
+  [ "x .y" $parse [x .y] ] assert_equal
   [ "x.-- comment" $parse ] assert_error
   [ ":x." $parse ] assert_error
   [ ":x..y" $parse ] assert_error
   [ "-> x." $parse ] assert_error
-  [ "=> .x" $parse ] assert_error
+  [ "=> .x" $parse [:.x $=>] ] assert_equal
   [ "<- x..y" $parse ] assert_error
   [ "1.2.3" $parse ] assert_error
   [ "'." $parse ['.] ] assert_equal
   [ "\"a.b..c\"" $parse ["a.b..c"] ] assert_equal
+]
+
+(test/run) [
+  [ ".child.x" $parse [.child.x] ] assert_equal
+  [ ":.x" $parse [:.x] ] assert_equal
+  [ "-> .x" $parse [:.x $->] ] assert_equal
+  [ "<- .x" $parse [:.x $<-] ] assert_equal
+  [ ".x." $parse ] assert_error
+  [ "..x" $parse ] assert_error
+  [ ". x" $parse ] assert_error
 ]

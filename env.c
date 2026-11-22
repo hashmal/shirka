@@ -85,12 +85,22 @@ static const char *path_dot (const char *name)
 	return strchr(name, '.');
 }
 
-static const skH_binding *find (skL *scope, symbol *key)
+static const skH_binding *find (skE *env, symbol *key)
 {
+	skL *scope = env->scope->bindings;
+	skO *record;
 	const char *name = key->name;
 	const char *dot;
 	const skH_binding *binding;
 
+	if (*name == '.') {
+		record = skE_stackPeek(env, 0);
+		skE_checkType(env, record, SKO_LIST);
+		scope = record->scope;
+		name++;
+	}
+	if (!scope)
+		return NULL;
 	while ((dot = path_dot(name))) {
 		binding = skH_get(scope->map, part(name, (size_t)(dot - name)));
 		if (!binding || !binding->value || binding->value->tag != SKO_LIST || !binding->value->scope)
@@ -167,6 +177,7 @@ static int assign (skE *env, symbol *key, skO *value, skH_kind kind)
 	const skH_binding *binding;
 	skO *root;
 	skO *target;
+	skO *record = NULL;
 	skL **scope;
 	symbol *root_key;
 	skH_kind root_kind;
@@ -175,12 +186,23 @@ static int assign (skE *env, symbol *key, skO *value, skH_kind kind)
 		skL_write(&env->scope->bindings);
 		return store(env->scope->bindings->map, key, value, kind);
 	}
-	root_key = part(name, (size_t)(dot - name));
-	binding = skH_get(env->scope->bindings->map, root_key);
-	if (!binding || !binding->value || binding->value->tag != SKO_LIST)
-		return 0;
-	root = skO_clone(binding->value);
-	root_kind = binding->kind;
+	root_key = NULL;
+	root_kind = SKH_VALUE;
+	if (dot == name) {
+		record = env->stack;
+		if (!record || record->tag != SKO_LIST)
+			return 0;
+		/* Only the dictionary changes. Do not copy the record's sequence. */
+		root = skO_list_new();
+		root->scope = skL_retain(record->scope);
+	} else {
+		root_key = part(name, (size_t)(dot - name));
+		binding = skH_get(env->scope->bindings->map, root_key);
+		if (!binding || !binding->value || binding->value->tag != SKO_LIST)
+			return 0;
+		root = skO_clone(binding->value);
+		root_kind = binding->kind;
+	}
 	target = root;
 	name = dot + 1;
 	for (;;) {
@@ -205,9 +227,16 @@ static int assign (skE *env, symbol *key, skO *value, skH_kind kind)
 			FATAL("PANIC! Could not copy field.\n");
 		name = dot + 1;
 	}
-	skL_write(&env->scope->bindings);
-	if (!skH_set(env->scope->bindings->map, root_key, root, root_kind))
-		FATAL("PANIC! Could not assign record.\n");
+	if (record) {
+		skL_free(record->scope);
+		record->scope = root->scope;
+		root->scope = NULL;
+		skO_free(root);
+	} else {
+		skL_write(&env->scope->bindings);
+		if (!skH_set(env->scope->bindings->map, root_key, root, root_kind))
+			FATAL("PANIC! Could not assign record.\n");
+	}
 	return 1;
 }
 
@@ -251,7 +280,7 @@ void skE_undef (skE *env, skO *sym)
 	skO *value;
 
 	skE_checkType(env, sym, SKO_QSYMBOL);
-	binding = find(env->scope->bindings, sym->data.sym);
+	binding = find(env, sym->data.sym);
 	if (!binding || binding->kind != SKH_VALUE) {
 		skO_free(sym);
 		skE_error(env, "Restore requires a value binding in the current lexical scope.");
@@ -264,7 +293,7 @@ void skE_undef (skE *env, skO *sym)
 		skL_write(&env->scope->bindings);
 		value = skH_take(env->scope->bindings->map, sym->data.sym, NULL);
 		if (!value) {
-			binding = find(env->scope->bindings, sym->data.sym);
+			binding = find(env, sym->data.sym);
 			value = skO_clone(binding->value);
 		}
 		if (!skH_hide(env->scope->bindings->map, sym->data.sym))
@@ -347,7 +376,7 @@ void skE_execList (skE *env, skO *list, int scoping)
 
 		switch (tok->tag) {
 		case SKO_SYMBOL:
-			r = find(env->scope->bindings, tok->data.sym);
+			r = find(env, tok->data.sym);
 			if (!r)
 				skE_error(env, "Not found: %s", tok->data.sym->name);
 			switch (r->kind) {

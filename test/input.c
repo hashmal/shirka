@@ -50,8 +50,8 @@ int main(void)
 	char *invalid[] = {
 		"\"abc", "\"abc\\", "'", "'\\", "\"\\q\"",
 		"[ : ]", "[[ : ]]", "(print) [ : ]", "[1 2", "(puts",
-		"(puts)", "]", ")", ".", "..", ".x", "x.", "x..y", "x.1",
-		":x.", ":x..y", "-> .x", "=> x.", "<- x..y", "x.--comment"
+		"(puts)", "]", ")", ".", "..", ". x", "x.", "x..y", "x.1",
+		":x.", ":x..y", "-> ..x", "=> x.", "<- x..y", "x.--comment"
 	};
 	size_t i;
 
@@ -61,6 +61,7 @@ int main(void)
 	check("(=> foo) [42]", 1);
 	check("foo.bar.baz :foo.bar -> foo.bar => foo.bar <- foo.bar", 1);
 	check("foo.bar-- comment", 1);
+	check(".x .child.x :.x -> .x => .method <- .x", 1);
 	check("'. \"a.b\" 0.5 -0.5 1.", 1);
 	check_comment("foo-- comment", SKO_SYMBOL);
 	check_comment(":foo-- comment", SKO_QSYMBOL);
@@ -86,6 +87,14 @@ int main(void)
 	check(token, 0);
 	strcpy(quoted + 1, token);
 	check(quoted, 0);
+	/* A stack-relative path includes its leading dot in the same length bound. */
+	memset(token, 'a', SYMBOL_MAX_LENGTH - 1);
+	token[0] = '.';
+	token[SYMBOL_MAX_LENGTH - 1] = 0;
+	check(token, 1);
+	token[SYMBOL_MAX_LENGTH - 1] = 'a';
+	token[SYMBOL_MAX_LENGTH] = 0;
+	check(token, 0);
 	memset(token, '1', SYMBOL_MAX_LENGTH);
 	token[SYMBOL_MAX_LENGTH - 1] = 0;
 	check(token, 1);

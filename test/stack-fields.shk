@@ -1,0 +1,32 @@
+"lib/test.shk" with
+
+(test/run) [
+  [ [] 42 -> .x .x >< << 42 ] assert_equal
+  [ 99 [] 42 -> .x .x << << 99 ] assert_equal
+  [ (!)[1 -> x 2 -> y []] .x << .y >< << 2 ] assert_equal
+  [ [] 42 -> .x -> record record.x 42 ] assert_equal
+  [ [] -> record 42 -> record.x record .x >< << 42 ] assert_equal
+  [ [] [] -> .child 42 -> .child.x .child.x >< << 42 ] assert_equal
+  [ [] 42 -> .x [.x 2 *] => .double .double >< << 84 ] assert_equal
+  [ [] [-> receiver 7] => .consume .consume 7 ] assert_equal
+  [ [] [42] -> .instructions .instructions ! >< << 42 ] assert_equal
+  [ [] 42 -> .x <- .x >< << 42 ] assert_equal
+  [ [] 42 -> .x <- .x << .x ] assert_error
+  [ [] 1 -> .x >> 2 -> .x << .x >< << 1 ] assert_equal
+  [ [] -> record record 42 -> .x << record.x ] assert_error
+  [ [] 42 -> .x [] -> .child .child.x ] assert_error
+  [ [] [42 -> x []] ! -> .child .child.x >< << 42 ] assert_equal
+  [ [] :x -> .symbol .symbol >< << :x ] assert_equal
+  [ [abort] 42 -> .x .x >< << 42 ] assert_equal
+  [ [1 2] 42 -> .x [1 2] ] assert_equal
+  [ [] 42 -> .x :.x unquote [] >< cons ! >< << 42 ] assert_equal
+  [ .x ] assert_error
+  [ 42 .x ] assert_error
+  [ [] .missing ] assert_error
+  [ [] 1 -> .x .x.child ] assert_error
+  [ [] 42 -> .missing.x ] assert_error
+  [ 42 -> .x ] assert_error
+  [ 1 42 -> .x ] assert_error
+  [ [] 42 => .method ] assert_error
+  [ <- .x ] assert_error
+]
