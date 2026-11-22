@@ -71,18 +71,19 @@ vendored here. Readline's own license is authoritative for redistribution.
 ## Session
 
 ```text
-> 2
-2 > 3
-2 3 > +
-5 > 42 -> x
-5 > x
-5 42 >
+.. 2
+2 .. 3
+2 3 .. +
+5 .. 42 -> x
+5 .. x
+5 42 ..
 ```
 
 Values and top-level reserves/operation definitions survive submissions. Input is
 evaluated on the actual user stack, never on `try`'s empty local stack. Results
 are not printed or consumed automatically. The prompt previews at most three
-values, bottom-to-top, without cloning or executing them. `/stack` shows indexed
+values, bottom-to-top, without cloning or executing them. The primary marker is
+`..`, colored gray (bright black) when color is enabled. `/stack` shows indexed
 values with the top at index zero.
 
 Examples:

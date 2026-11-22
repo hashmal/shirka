@@ -51,6 +51,15 @@ static void expect (const char *text)
 	}
 }
 
+static void expect_prompt (const char *preview)
+{
+	char text[2048];
+
+	snprintf(text, sizeof(text), "%s%s", preview,
+		colors ? "\033[90m..\033[39m " : ".. ");
+	expect(text);
+}
+
 static void send_text (const char *text)
 {
 	used = 0;
@@ -105,7 +114,7 @@ static void start (int interactive, const char *input)
 		_exit(127);
 	}
 	if (interactive)
-		expect("> ");
+		expect_prompt("");
 	else {
 		close(pipe_in[0]); close(pipe_out[1]);
 		terminal = pipe_out[0];
@@ -233,59 +242,59 @@ snprintf(load_path, sizeof(load_path), "%s/load data.shk", state_path);
 	fputs("77 -> loaded [2 *] => twice", file); fclose(file);
 	start(1, NULL);
 	snprintf(command, sizeof(command), "/load %s\n", load_path);
-	send_text(command); expect("> ");
-	send_text("loaded twice\n"); expect("154 > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("(!)[1 -> x []]\n"); expect("[] > ");
-	send_text(".x\n"); expect("[] 1 > ");
-	send_text("puts\n"); expect("[] > ");
-	send_text("42 -> .x\n"); expect("[] > ");
-	send_text("[.x 2 *] => .double\n"); expect("[] > ");
-	send_text(".double\n"); expect("[] 84 > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("[ : ]\n"); expect("Parsing error"); expect("> ");
-	send_text("2\n"); expect("2 > ");
-	send_text("3\n"); expect("2 3 > ");
-	send_text("[]\n"); expect("2 3 [] > ");
-	send_text("/clear\n"); expect("> ");
-	send_text(":puts :puts unquote\n"); expect(":puts puts > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("42 -> x\n"); expect("> ");
-	send_text("x\n"); expect("42 > ");
-	send_text("[1 +] => inc\n"); expect("42 > ");
-	send_text("inc\n"); expect("43 > ");
-	send_text("missing\n"); expect("43 > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("12\033[D3\033[F\n"); expect("132 > ");
-	send_text("9\033[H1\033[F2\n"); expect("132 192 > ");
-	send_text("123\033[H\033[C\033[3~\n"); expect("132 192 13 > ");
-	send_text("12\1773\n"); expect("192 13 13 > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("12\033[H\004\n"); expect("2 > ");
-	send_text("7\n"); expect("2 7 > ");
-	send_text("\033[A\n"); expect("2 7 7 > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("\033[200~1\n2 +\033[201~\n"); expect("3 > ");
+	send_text(command); expect_prompt("");
+	send_text("loaded twice\n"); expect_prompt("154 ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("(!)[1 -> x []]\n"); expect_prompt("[] ");
+	send_text(".x\n"); expect_prompt("[] 1 ");
+	send_text("puts\n"); expect_prompt("[] ");
+	send_text("42 -> .x\n"); expect_prompt("[] ");
+	send_text("[.x 2 *] => .double\n"); expect_prompt("[] ");
+	send_text(".double\n"); expect_prompt("[] 84 ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("[ : ]\n"); expect("Parsing error"); expect_prompt("");
+	send_text("2\n"); expect_prompt("2 ");
+	send_text("3\n"); expect_prompt("2 3 ");
+	send_text("[]\n"); expect_prompt("2 3 [] ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text(":puts :puts unquote\n"); expect_prompt(":puts puts ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("42 -> x\n"); expect_prompt("");
+	send_text("x\n"); expect_prompt("42 ");
+	send_text("[1 +] => inc\n"); expect_prompt("42 ");
+	send_text("inc\n"); expect_prompt("43 ");
+	send_text("missing\n"); expect_prompt("43 ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("12\033[D3\033[F\n"); expect_prompt("132 ");
+	send_text("9\033[H1\033[F2\n"); expect_prompt("132 192 ");
+	send_text("123\033[H\033[C\033[3~\n"); expect_prompt("132 192 13 ");
+	send_text("12\1773\n"); expect_prompt("192 13 13 ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("12\033[H\004\n"); expect_prompt("2 ");
+	send_text("7\n"); expect_prompt("2 7 ");
+	send_text("\033[A\n"); expect_prompt("2 7 7 ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("\033[200~1\n2 +\033[201~\n"); expect_prompt("3 ");
 	send_text("[\n"); expect("... ");
-	send_text("\003"); expect("3 > ");
+	send_text("\003"); expect_prompt("3 ");
 	send_text("discard this");
 	select(0, NULL, NULL, NULL, &pause);
-	send_text("\003"); expect("3 > ");
+	send_text("\003"); expect_prompt("3 ");
 	send_text("[loop] => loop loop\n");
 	pause.tv_sec = 0; pause.tv_usec = 200000;
 	select(0, NULL, NULL, NULL, &pause);
-	send_text("\003"); expect("3 > ");
-send_text("12 34\033b5\n"); expect("3 12 534 > ");
-	send_text("/clear\n"); expect("> ");
+	send_text("\003"); expect_prompt("3 ");
+send_text("12 34\033b5\n"); expect_prompt("3 12 534 ");
+	send_text("/clear\n"); expect_prompt("");
 	send_text("\033[200~\"\033[31m\"\033[201~\n");
-	expect("control bytes"); expect("> ");
+	expect("control bytes"); expect_prompt("");
 	assert(!strstr(output, "\033[31m"));
-	send_text("9\n"); expect("9 > ");
+	send_text("9\n"); expect_prompt("9 ");
 	send_text("/exit\n");
 	finish(0);
 	file = fopen(history, "r"); assert(file); fclose(file);
 	start(1, NULL);
-	send_text("\033[A\033[A\n"); expect("9 > ");
+	send_text("\033[A\033[A\n"); expect_prompt("9 ");
 	send_text("\004"); finish(0);
 	start(1, NULL);
 	assert(kill(child, SIGTERM) == 0);
@@ -297,21 +306,21 @@ send_text("12 34\033b5\n"); expect("3 12 534 > ");
 	finish(0);
 	start(1, NULL);
 	send_text(":foo \"hello\" 12\n");
-	expect("\033[31m:foo\033[39m \033[32m\"hello\"\033[39m \033[36m12\033[39m > ");
-	send_text("/clear\n"); expect("> ");
+	expect_prompt("\033[31m:foo\033[39m \033[32m\"hello\"\033[39m \033[36m12\033[39m ");
+	send_text("/clear\n"); expect_prompt("");
 	send_text("[x :y \"z\" TRUE 3 '[ ]\n");
 	expect("[x \033[31m:y\033[39m \033[32m\"z\"\033[39m");
-	expect("TRUE \033[36m3\033[39m \033[32m'[\033[39m] > ");
-	send_text("/stack\n"); expect("0: [x"); expect("> ");
+	expect_prompt("TRUE \033[36m3\033[39m \033[32m'[\033[39m] ");
+	send_text("/stack\n"); expect("0: [x"); expect_prompt("");
 	/* Editing with a colored, long prompt must still use visible columns. */
-	send_text("12\033[H3\033[F\n"); expect("\033[36m312\033[39m > ");
-	send_text("missing\n"); expect("\033[36m312\033[39m > ");
+	send_text("12\033[H3\033[F\n"); expect_prompt("\033[36m312\033[39m ");
+	send_text("missing\n"); expect_prompt("\033[36m312\033[39m ");
 	send_text("1                                                                                \033[H2\033[F\n");
-	expect("\033[36m21\033[39m > ");
-	send_text("\003"); expect("\033[36m21\033[39m > ");
-	send_text("/clear\n"); expect("> ");
-	send_text("\033[A\n"); expect("> ");
-	send_text("TRUE\n"); expect("\033[35mTRUE\033[39m > ");
+	expect_prompt("\033[36m21\033[39m ");
+	send_text("\003"); expect_prompt("\033[36m21\033[39m ");
+	send_text("/clear\n"); expect_prompt("");
+	send_text("\033[A\n"); expect_prompt("");
+	send_text("TRUE\n"); expect_prompt("\033[35mTRUE\033[39m ");
 	send_text("/exit\n"); finish(0);
 	file = fopen(history, "r"); assert(file);
 	while (!feof(file))

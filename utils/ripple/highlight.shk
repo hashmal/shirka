@@ -128,4 +128,5 @@
       p/color ripple/format
       ++ " " ++
     ]
-    "> " ++ ]
+    ".." p/color [ [:bright-black] ansi-style ] !?
+    " " ++ ++ ]
