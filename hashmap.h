@@ -11,12 +11,12 @@ typedef enum {
 	SKH_HIDDEN
 } skH_kind;
 
-typedef struct {
+struct skH_binding {
 	symbol *key;
 	skO *value;
 	skH_kind kind;
 	skE_natOp *native;
-} skH_binding;
+};
 
 /* The optional ancestor is borrowed, immutable, and must outlive this map.
  * Allocation failure returns NULL. Freeing NULL is allowed. */
@@ -37,6 +37,11 @@ int skH_set (skH *map, symbol *key, skO *value, skH_kind kind);
  * getLocal and take operate only on the specified map. */
 const skH_binding *skH_get (const skH *map, const symbol *key);
 const skH_binding *skH_getLocal (const skH *map, const symbol *key);
+
+/* Visit local entries in unspecified order, including hidden/native entries.
+ * Returning zero stops iteration. Do not mutate the map during visitation.
+ * Returns one if all entries were visited, zero if stopped by the visitor. */
+int skH_each (const skH *map, int (*visit)(const skH_binding *, void *), void *data);
 
 /* Remove a local binding and return its owned value, or NULL if absent.
  * If supplied, kind receives the binding mode on success only. */

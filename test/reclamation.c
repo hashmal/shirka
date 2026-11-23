@@ -134,9 +134,7 @@ static void submit (skE *env, char *source)
 	}
 	if (skO_read(source, &list) != SK_PARSE_OK)
 		return;
-	sk_list_append(list, skO_list_new());
 	skE_execList(env, list, 0);
-	skO_free(skE_stackPop(env));
 	assert(env->scope == scope && !env->execution);
 }
 

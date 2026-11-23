@@ -46,6 +46,7 @@ typedef struct skO      skO;
 typedef struct skE      skE;
 typedef struct context  context;
 typedef struct skH skH;
+typedef struct skH_binding skH_binding;
 typedef struct skL skL;
 typedef struct execution execution;
 
@@ -178,6 +179,10 @@ void skE_free         (skE *env);
 
 /* Discard pending execution and scopes above stop; preserve stack and stop. */
 void skE_unwind       (skE *env, context *stop);
+
+/* Borrow a binding without copying or executing it. Relative paths validate
+ * the stack receiver; the result follows dictionary borrowing rules. */
+const skH_binding *skE_lookup (skE *env, symbol *key);
 
 /* Define or undefine named entities in the current scope. */
 void skE_defNative    (skE *env, char *name, skE_natOp *native);

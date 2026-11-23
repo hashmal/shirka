@@ -7,6 +7,8 @@
   "/stack      inspect the session stack (bounded)" puts
   "/clear      clear the session stack; keep definitions" puts
   "/load PATH  execute a file in the current session" puts
+  "/bindings   inspect session bindings without executing them" puts
+  "/fields [PATH] inspect a record; default is the top stack value" puts
   "" puts
   "Input values and definitions persist. Errors keep completed changes." puts
   "Ctrl-C cancels input or interrupts between interpreter steps." puts
@@ -66,20 +68,15 @@
         (if) [
           [ text :code ]
           [ text ripple/word -> word -> path
-            word "/load" =
+            word "/load" = word "/fields" = or
             (if) [
-              [ path ripple/trim :load ]
-              [ text "/help" =
-                (if) [ [ [] :help ] [
-                  text "/exit" =
-                  (if) [ [ [] :exit ] [
-                    text "/stack" =
-                    (if) [ [ [] :stack ] [
-                      text "/clear" =
-                      (if) [ [ [] :clear ] [ text :code ] ]
-                    ] ]
-                  ] ]
-                ] ]
+              [ path ripple/trim word "/load" = (if) [ [:load] [:fields] ] ]
+              [ text :code
+                text "/help" =     [ << << [] :help ] !?
+                text "/exit" =     [ << << [] :exit ] !?
+                text "/stack" =    [ << << [] :stack ] !?
+                text "/clear" =    [ << << [] :clear ] !?
+                text "/bindings" = [ << << [] :bindings ] !?
               ]
             ]
           ]
@@ -90,13 +87,35 @@
 
 (=> ripple/stack)
 -- Inspection returns descriptions, not the session values themselves.
-  [ 256 511 6 ripple/stack-view -> s/color -> omitted
+  [ 256 511 6 ripple/stack-view -> omitted
     length? 0 = [ "(empty stack)" puts ] !?
     0 ><
     (each) [ -> value >> print ": " print
-      <- value s/color ripple/format puts 1 + ]
+      <- value ripple/color? ripple/format puts 1 + ]
     <<
     omitted [ "... additional stack values omitted" puts ] !? ]
+
+(=> ripple/show-bindings)
+-- Path -- Success?; native inspection returns data, never executable bindings.
+  [ 128 255 3 ripple/bindings -> v/found -> v/omitted
+    v/found
+    (if) [
+      [ length? 0 = [ "(no visible bindings)" puts ] !?
+        (each) [
+          .name ripple/color? ripple/format print
+          " [" print .kind print ", " print .origin print "] = " print
+          .value ripple/color? ripple/format puts <<
+        ]
+        v/omitted [ "... additional bindings omitted" puts ] !?
+        TRUE
+      ]
+      [ << FALSE ]
+    ] ]
+
+(=> ripple/load)
+-- Path -- Success?; only execute a file after the whole file parsed successfully.
+  [ ripple/parse-file
+    (if) [ [ ripple/execute ] [ << FALSE ] ] ]
 
 (=> ripple/dispatch)
 -- Argument Command -- Success? Continue?
@@ -105,10 +124,16 @@
     command :exit =  [ TRUE FALSE ] !?
     command :stack = [ ripple/stack TRUE TRUE ] !?
     command :clear = [ ripple/clear-stack TRUE TRUE ] !?
+    command :bindings = [ "" ripple/show-bindings TRUE ] !?
+    command :fields = (!?) [
+      argument ripple/trim reverse ripple/trim reverse
+      length? 0 = [ << "." ] !?
+      ripple/show-bindings TRUE
+    ]
     command :load = (!?) [
       argument ripple/nonempty?
       (if) [
-        [ argument ripple/load-file TRUE ]
+        [ argument ripple/load TRUE ]
         [ "Usage: /load PATH" puts FALSE TRUE ]
       ]
     ] ]
@@ -118,7 +143,7 @@
   [ -> ok -> text
     text ripple/parse -> status
     status :more = [ << text ok TRUE ] !?
-    status :invalid = [ << [] FALSE TRUE ] !?
+    status :invalid = [ text ripple/history << [] FALSE TRUE ] !?
     status :ready = (!?) [
       text ripple/history
       ripple/execute ok and

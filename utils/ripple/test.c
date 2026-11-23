@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <termios.h>
 #ifdef __APPLE__
 #include <util.h>
@@ -204,7 +205,13 @@ int main (void)
 	struct timeval pause = {0, 200000};
 	char history[256];
 	char load_path[256];
+	char invalid_path[256];
 	char command[300];
+	char contents[256];
+	const char nul_source[] = "999 puts\0abort";
+	struct stat info;
+	ino_t history_inode;
+	int i;
 	FILE *file;
 
 	unit_tests();
@@ -215,6 +222,37 @@ int main (void)
 	finish(0);
 	snprintf(history, sizeof(history), "%s/ripple/history", state_path);
 	assert(access(history, F_OK) != 0); /* Pipes never write history. */
+	start(0, "99\n(! -> record) [42 -> x [abort] => danger []]\n"
+		"/fields record\nrecord.x puts\n/stack\n");
+	expect("0: 99");
+	assert(strstr(output, ":x [value, captured] = 42"));
+	assert(strstr(output, ":danger [operation, captured] = [abort]"));
+	assert(!strstr(output, "Execution aborted") && !strchr(output, 27));
+	finish(0);
+	start(0, "1 -> x\n2 -> x\n[abort] => danger\n/bindings\n<- x <<\n/bindings\n"
+		"\"BINDINGS DONE\" puts\n");
+	expect("BINDINGS DONE");
+	assert(strstr(output, ":x [value, local] = 2"));
+	assert(!strstr(strstr(output, ":x [value, local]") + 1, ":x [value, local]"));
+	assert(strstr(output, ":danger [operation, local] = [abort]"));
+	assert(strstr(output, ":x [hidden, local] = <hidden>"));
+	finish(0);
+	start(0, "[1 -> private] => hide\nhide\nprivate\n7 puts\n");
+	expect("7\n");
+	assert(strstr(output, "Not found: private"));
+	finish(1);
+	start(0, "/fields\n7\n/fields\n/fields missing\n7 puts\n");
+	expect("7\n"); finish(1);
+	start(0, "(! -> record) [42 -> x [abort] => danger []]\n"
+		"/fields record.danger\nrecord\n/fields .danger\n/stack\n\"INSPECTED\" puts\n");
+	expect("INSPECTED");
+	assert(strstr(output, ":x [value, captured] = 42") && !strstr(output, "Execution aborted"));
+	finish(0);
+	memcpy(command, "/fields ", 8);
+	memset(command + 8, 'x', SYMBOL_MAX_LENGTH);
+	strcpy(command + 8 + SYMBOL_MAX_LENGTH, "\n7 puts\n");
+	start(0, command);
+	expect("7\n"); finish(1);
 	start(0, "+\nmissing\n1 TRUE +\nabort\n/clear\n[\n1 '[ -- ]\n]\n/stack\n");
 	expect("0: [1 '[]");
 	assert(!strchr(output, 27));
@@ -236,6 +274,24 @@ int main (void)
 	assert(strstr(output, "255: 1") && !strstr(output, "256: 1"));
 	assert(strstr(output, "additional stack values omitted"));
 	finish(0);
+	snprintf(invalid_path, sizeof(invalid_path), "%s/invalid source.shk", state_path);
+	file = fopen(invalid_path, "w"); assert(file);
+	fputs("999 puts 42 -> leaked [ : ]", file); fclose(file);
+	snprintf(command, sizeof(command), "/load %s\nleaked\n7 puts\n", invalid_path);
+	start(0, command);
+	expect("7\n");
+	assert(strstr(output, "Syntax error in file") && strstr(output, "Not found: leaked"));
+	assert(!strstr(output, "999\n"));
+	finish(1);
+	file = fopen(invalid_path, "wb"); assert(file);
+	assert(fwrite(nul_source, 1, sizeof(nul_source) - 1, file) == sizeof(nul_source) - 1);
+	fclose(file);
+	snprintf(command, sizeof(command), "/load %s\n7 puts\n", invalid_path);
+	start(0, command);
+	expect("7\n");
+	assert(strstr(output, "NUL byte in source file") && !strstr(output, "999\n"));
+	finish(1);
+	unlink(invalid_path);
 
 snprintf(load_path, sizeof(load_path), "%s/load data.shk", state_path);
 	file = fopen(load_path, "w"); assert(file);
@@ -245,6 +301,10 @@ snprintf(load_path, sizeof(load_path), "%s/load data.shk", state_path);
 	send_text(command); expect_prompt("");
 	send_text("loaded twice\n"); expect_prompt("154 ");
 	send_text("/clear\n"); expect_prompt("");
+	send_text("(!)[42 -> x [abort] => danger []]\n"); expect_prompt("[] ");
+	send_text("/fields\n"); expect(":danger [operation, captured] = [abort]"); expect_prompt("[] ");
+	send_text(".x\n"); expect_prompt("[] 42 ");
+	send_text("/clear\n"); expect_prompt("");
 	send_text("(!)[1 -> x []]\n"); expect_prompt("[] ");
 	send_text(".x\n"); expect_prompt("[] 1 ");
 	send_text("puts\n"); expect_prompt("[] ");
@@ -253,7 +313,8 @@ snprintf(load_path, sizeof(load_path), "%s/load data.shk", state_path);
 	send_text(".double\n"); expect_prompt("[] 84 ");
 	send_text("/clear\n"); expect_prompt("");
 	send_text("[ : ]\n"); expect("Parsing error"); expect_prompt("");
-	send_text("2\n"); expect_prompt("2 ");
+	send_text("\033[A"); expect("[ : ]");
+	send_text("\0252\n"); expect_prompt("2 ");
 	send_text("3\n"); expect_prompt("2 3 ");
 	send_text("[]\n"); expect_prompt("2 3 [] ");
 	send_text("/clear\n"); expect_prompt("");
@@ -326,6 +387,65 @@ send_text("12 34\033b5\n"); expect_prompt("3 12 534 ");
 	while (!feof(file))
 		assert(fgetc(file) != 27); /* History stores source, never color bytes. */
 	fclose(file);
+	unlink(history);
+	colors = 0;
+	/* A complete multiline submission remains one history entry after restart. */
+	start(1, NULL);
+	send_text("\"first\n"); expect("... ");
+	send_text("#123\n"); expect("... ");
+	send_text("last\"\n"); expect_prompt("\"first\\n#123\\nlast\" ");
+	send_text("\004"); finish(0);
+	assert(stat(history, &info) == 0 && (info.st_mode & 0777) == 0600);
+	start(1, NULL);
+	send_text("\033[A\n"); expect_prompt("\"first\\n#123\\nlast\" ");
+	send_text("\004"); finish(0);
+	unlink(history);
+	/* Legacy GNU history is read once and saved with the unambiguous marker. */
+	file = fopen(history, "w"); assert(file);
+	fputs("#100\n[1]\n", file); fclose(file);
+	start(1, NULL);
+	send_text("\033[A\n"); expect_prompt("[1] ");
+	send_text("\004"); finish(0);
+	file = fopen(history, "r"); assert(file);
+	assert(fgetc(file) == '\036'); fclose(file);
+	unlink(history);
+	/* Existing symlinks are neither loaded nor overwritten. */
+	assert(symlink(load_path, history) == 0);
+	start(1, NULL);
+	send_text("loaded\n"); expect("Not found: loaded"); expect_prompt("");
+	send_text("\004"); finish(0);
+	assert(lstat(history, &info) == 0 && S_ISLNK(info.st_mode));
+	unlink(history);
+	/* A link installed during a session is replaced, never followed on save. */
+	start(1, NULL);
+	assert(symlink(load_path, history) == 0);
+	send_text("42\n"); expect_prompt("42 ");
+	send_text("\004"); finish(0);
+	assert(lstat(history, &info) == 0 && S_ISREG(info.st_mode));
+	assert((info.st_mode & 0777) == 0600);
+	file = fopen(load_path, "r"); assert(file);
+	assert(fgets(contents, sizeof(contents), file)); fclose(file);
+	assert(!strcmp(contents, "77 -> loaded [2 *] => twice"));
+	/* If no temporary file can be created, retain the previous history. */
+	history_inode = info.st_ino;
+	start(1, NULL);
+	for (i = 0; i < 16; i++) {
+		snprintf(command, sizeof(command), "%s/ripple/.history.%ld.%d", state_path, (long)child, i);
+		file = fopen(command, "w"); assert(file); fclose(file);
+	}
+	send_text("44\n"); expect_prompt("44 ");
+	send_text("\004"); finish(0);
+	assert(stat(history, &info) == 0 && info.st_ino == history_inode);
+	for (i = 0; i < 16; i++) {
+		snprintf(command, sizeof(command), "%s/ripple/.history.%ld.%d", state_path, (long)child, i);
+		unlink(command);
+	}
+	unlink(history);
+	assert(mkfifo(history, 0600) == 0);
+	start(1, NULL);
+	send_text("43\n"); expect_prompt("43 ");
+	send_text("\004"); finish(0);
+	assert(lstat(history, &info) == 0 && S_ISFIFO(info.st_mode));
 	unlink(history);
 	unlink(load_path);
 	snprintf(history, sizeof(history), "%s/ripple", state_path);

@@ -222,3 +222,15 @@ skH *skH_copy (const skH *map)
 	}
 	return copy;
 }
+
+int skH_each (const skH *map, int (*visit)(const skH_binding *, void *), void *data)
+{
+	entry *node;
+	size_t i;
+
+	for (i = 0; i < map->capacity; i++)
+		for (node = map->buckets[i]; node; node = node->next)
+			if (!visit(&node->binding, data))
+				return 0;
+	return 1;
+}

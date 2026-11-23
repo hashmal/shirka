@@ -2,7 +2,7 @@
 
 `hashmap.c` / `hashmap.h` provide a standalone C container. Include `hashmap.h`
 and compile/link `hashmap.c` with the interpreter's object implementation. It is
-not yet wired into scope lookup, the evaluator, or Shirka syntax.
+used by lexical scope lookup and list dictionaries on this branch.
 
 ```c
 skH *scope = skH_new(parent);  /* parent may be NULL */
@@ -90,3 +90,15 @@ create these entries. `skH_set` still accepts only the original value/operation
 kinds. `skH_get` returns hidden entries so callers can distinguish a masked name
 from an absent local entry. `skH_take` can remove these entries too, returning
 NULL and setting the kind output; use lookup first when that distinction matters.
+
+`skH_each(map, visit, data)` visits local entries in unspecified order, including
+native and hidden entries. The callback receives a borrowed binding and returns
+nonzero to continue, zero to stop. The function returns one if traversal completed,
+zero if stopped. Do not mutate the map during visitation. Ancestor traversal and
+shadow filtering belong to the caller.
+
+`skE_lookup(env, key)` borrows a visible binding using the evaluator's normal
+lookup, including dotted and stack-relative paths, without copying or executing
+it. Relative paths validate the top stack receiver and may raise an interpreter
+error if it is absent or not a list. Other missing paths return NULL. Binding
+lifetime follows the hashmap borrowing rules above.

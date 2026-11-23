@@ -85,7 +85,7 @@ static const char *path_dot (const char *name)
 	return strchr(name, '.');
 }
 
-static const skH_binding *find (skE *env, symbol *key)
+const skH_binding *skE_lookup (skE *env, symbol *key)
 {
 	skL *scope = env->scope->bindings;
 	skO *record;
@@ -280,7 +280,7 @@ void skE_undef (skE *env, skO *sym)
 	skO *value;
 
 	skE_checkType(env, sym, SKO_QSYMBOL);
-	binding = find(env, sym->data.sym);
+	binding = skE_lookup(env, sym->data.sym);
 	if (!binding || binding->kind != SKH_VALUE) {
 		skO_free(sym);
 		skE_error(env, "Restore requires a value binding in the current lexical scope.");
@@ -293,7 +293,7 @@ void skE_undef (skE *env, skO *sym)
 		skL_write(&env->scope->bindings);
 		value = skH_take(env->scope->bindings->map, sym->data.sym, NULL);
 		if (!value) {
-			binding = find(env, sym->data.sym);
+			binding = skE_lookup(env, sym->data.sym);
 			value = skO_clone(binding->value);
 		}
 		if (!skH_hide(env->scope->bindings->map, sym->data.sym))
@@ -376,7 +376,7 @@ void skE_execList (skE *env, skO *list, int scoping)
 
 		switch (tok->tag) {
 		case SKO_SYMBOL:
-			r = find(env, tok->data.sym);
+			r = skE_lookup(env, tok->data.sym);
 			if (!r)
 				skE_error(env, "Not found: %s", tok->data.sym->name);
 			switch (r->kind) {
@@ -468,6 +468,10 @@ skO *skO_loadParse (skE *env, char *path)
 	}
 	src[source_length] = 0;
 	fclose(f);
+	if (memchr(src, 0, source_length)) {
+		free(src);
+		skE_error(env, "NUL byte in source file %s.", path);
+	}
 
 	if (setjmp(jmp)) {
 		free(src);

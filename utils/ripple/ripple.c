@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ripple.h"
+#include "../../hashmap.h"
 
 #ifndef RIPPLE_HOME
 #define RIPPLE_HOME "."
@@ -12,10 +13,9 @@ struct ripple ripple;
 volatile sig_atomic_t ripple_interrupt;
 volatile sig_atomic_t ripple_stop;
 
-/* Validate before consuming the controller's character list. */
-static char *text_pop (skE *env)
+/* Validate and copy text without consuming the controller's character list. */
+static char *text_copy (skE *env, skO *text)
 {
-	skO *text = skE_stackPeek(env, 0);
 	skO *node;
 	char *buffer;
 	size_t length = 0;
@@ -34,8 +34,15 @@ static char *text_pop (skE *env)
 	for (node = text->data.list; node; node = node->next)
 		buffer[length++] = node->data.character;
 	buffer[length] = 0;
-	skO_free(skE_stackPop(env));
 	return buffer;
+}
+
+static char *text_pop (skE *env)
+{
+	char *text = text_copy(env, skE_stackPeek(env, 0));
+
+	skO_free(skE_stackPop(env));
+	return text;
 }
 
 static skO *text_new (const char *text)
@@ -52,8 +59,8 @@ static skO *text_new (const char *text)
 	return list;
 }
 
-/* Own list, or load path; recover on the actual session stack, never try's. */
-static int evaluate (skO *list, char *path)
+/* Own instructions; recover on the actual session stack, never try's. */
+static int evaluate (skO *list)
 {
 	skE *env = ripple.session;
 
@@ -68,13 +75,7 @@ static int evaluate (skO *list, char *path)
 		ripple_interrupt = 0;
 		return 0;
 	}
-	if (path)
-		list = skO_loadParse(env, path);
-	/* A real continuation prevents a final callee from inheriting session scope.
-	 * This private literal cannot be replaced by a user-defined operation. */
-	sk_list_append(list, skO_list_new());
 	skE_execList(env, list, 0);
-	skO_free(skE_stackPop(env));
 	ripple_interrupt = 0;
 	return 1;
 }
@@ -113,18 +114,24 @@ static skO *parse (skE *env)
 static skO *execute (skE *env)
 {
 	skE_checkType(env, skE_stackPeek(env, 0), SKO_LIST);
-	skE_stackPush(env, skO_boolean_new(evaluate(skE_stackPop(env), NULL)));
+	skE_stackPush(env, skO_boolean_new(evaluate(skE_stackPop(env))));
 	return NULL;
 }
 
-/* path -- success? */
-static skO *load_file (skE *env)
+/* path -- instructions success?; parsing never executes or changes the session. */
+static skO *parse_file (skE *env)
 {
 	char *path = text_pop(env);
-	int success = evaluate(NULL, path);
+	skO *list;
+
+	if (setjmp(ripple.session->jmp))
+		list = NULL;
+	else
+		list = skO_loadParse(ripple.session, path);
 
 	free(path);
-	skE_stackPush(env, skO_boolean_new(success));
+	skE_stackPush(env, list ? list : skO_list_new());
+	skE_stackPush(env, skO_boolean_new(list != NULL));
 	return NULL;
 }
 
@@ -138,7 +145,7 @@ static int view_limit (skE *env, size_t depth, int maximum)
 	return (int)value->data.number;
 }
 
-/* count width depth -- descriptions omitted? color?; never copies values. */
+/* count width depth -- descriptions omitted?; never copies values. */
 static skO *stack_view (skE *env)
 {
 	skO *node = ripple.session->stack;
@@ -164,7 +171,114 @@ static skO *stack_view (skE *env)
 	}
 	skE_stackPush(env, list);
 	skE_stackPush(env, skO_boolean_new(node != NULL));
-	skE_stackPush(env, skO_boolean_new(ripple.color));
+	return NULL;
+}
+
+/* Inspection records own only bounded text and metadata, not session values. */
+static void field (skO *record, char *name, skO *value)
+{
+	skO *key = skO_quoted_symbol_new(name);
+
+	if (!skH_set(record->scope->map, key->data.sym, value, SKH_VALUE))
+		FATAL("ripple: could not allocate inspection field.\n");
+	skO_free(key);
+}
+
+struct binding_view {
+	skL *scope;
+	skL *current;
+	skO **tail;
+	int count;
+	int width;
+	int depth;
+	int omitted;
+};
+
+static int describe_binding (const skH_binding *binding, void *data)
+{
+	struct binding_view *view = data;
+	skO *record;
+	skO key = {0};
+	char text[512];
+	char *kind;
+
+	if (skH_get(view->scope->map, binding->key) != binding)
+		return 1;
+	if (!view->count--) {
+		view->omitted = 1;
+		return 0;
+	}
+	record = skO_list_new();
+	record->scope = skL_new(NULL);
+	key.tag = SKO_QSYMBOL;
+	key.data.sym = binding->key;
+	skO_inspect(&key, text, (size_t)view->width + 1, 1);
+	field(record, "name", text_new(text));
+	kind = binding->kind == SKH_OPERATION ? "operation" :
+		binding->kind == SKH_NATIVE ? "native" :
+		binding->kind == SKH_HIDDEN ? "hidden" : "value";
+	field(record, "kind", skO_quoted_symbol_new(kind));
+	field(record, "origin", skO_quoted_symbol_new(view->current == view->scope ? "local" : "captured"));
+	if (binding->value)
+		skO_inspect(binding->value, text, (size_t)view->width + 1, (unsigned)view->depth);
+	else
+		snprintf(text, sizeof(text), "%s", binding->kind == SKH_HIDDEN ? "<hidden>" : "<native>");
+	field(record, "value", text_new(text));
+	*view->tail = record;
+	view->tail = &record->next;
+	return 1;
+}
+
+/* path count width depth -- entry-records omitted? found?
+ * Empty path selects session bindings; '.' selects the stack's top record. */
+static skO *bindings (skE *env)
+{
+	struct binding_view view;
+	char *path;
+	skO *result;
+	skO *object = NULL;
+	skO *key;
+	const skH_binding *binding;
+	int found = 1;
+	int i;
+
+	view.depth = view_limit(env, 0, 6);
+	view.width = view_limit(env, 1, 511);
+	view.count = view_limit(env, 2, 256);
+	path = text_copy(env, skE_stackPeek(env, 3));
+	for (i = 0; i < 4; i++)
+		skO_free(skE_stackPop(env));
+	view.scope = ripple.session->scope->bindings;
+	if (*path) {
+		if (path[0] == '.' && (!ripple.session->stack || ripple.session->stack->tag != SKO_LIST))
+			found = 0;
+		else if (!strcmp(path, "."))
+			object = ripple.session->stack;
+		else if (strlen(path) >= SYMBOL_MAX_LENGTH)
+			found = 0;
+		else {
+			key = skO_symbol_new(path);
+			binding = skE_lookup(ripple.session, key->data.sym);
+			object = binding ? binding->value : NULL;
+			skO_free(key);
+		}
+		if (!object || object->tag != SKO_LIST)
+			found = 0;
+		view.scope = found ? object->scope : NULL;
+	}
+	free(path);
+	if (!found)
+		fprintf(stderr, "ripple: field inspection requires an existing list or record.\n");
+	result = skO_list_new();
+	result->scope = skL_new(NULL);
+	view.tail = &result->data.list;
+	view.omitted = 0;
+	for (view.current = view.scope; view.current; view.current = view.current->ancestor)
+		if (!skH_each(view.current->map, describe_binding, &view))
+			break;
+	skE_stackPush(env, result);
+	skE_stackPush(env, skO_boolean_new(view.omitted));
+	skE_stackPush(env, skO_boolean_new(found));
 	return NULL;
 }
 
@@ -217,10 +331,13 @@ int main (int argc, char **argv)
 			skE_defNative(control, "ripple/read-line", read_line);
 			skE_defNative(control, "ripple/parse", parse);
 			skE_defNative(control, "ripple/execute", execute);
-			skE_defNative(control, "ripple/load-file", load_file);
+			skE_defNative(control, "ripple/parse-file", parse_file);
 			skE_defNative(control, "ripple/stack-view", stack_view);
 			skE_defNative(control, "ripple/clear-stack", clear_stack);
 			skE_defNative(control, "ripple/history", remember);
+			skE_defNative(control, "ripple/bindings", bindings);
+			skE_defObject(control, skO_quoted_symbol_new("ripple/color?"),
+				skO_boolean_new(ripple.color));
 			skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/utils/ripple/highlight.shk"), 0);
 			skE_execList(control, skO_loadParse(control, RIPPLE_HOME "/utils/ripple/ripple.shk"), 0);
 			/* The controller leaves its accumulated success flag on top. */

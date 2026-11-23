@@ -172,6 +172,14 @@ static skO *native (skE *env)
 	return NULL;
 }
 
+static int count_binding (const skH_binding *binding, void *data)
+{
+	int *remaining = data;
+
+	assert(binding->key);
+	return --*remaining != 0;
+}
+
 static void snapshots (void)
 {
 	skH *ancestor = skH_new(NULL);
@@ -188,6 +196,10 @@ static void snapshots (void)
 	assert(skH_setNative(map, key(1), native));
 	sk_list_append(list, skO_number_new(42));
 	assert(skH_set(map, key(2), list, SKH_OPERATION));
+	i = 10;
+	assert(skH_each(map, count_binding, &i) && i == 7);
+	i = 1;
+	assert(!skH_each(map, count_binding, &i) && i == 0);
 	baseline = allocations;
 	for (i = 1; i <= 5; i++) {
 		fail_after = i;

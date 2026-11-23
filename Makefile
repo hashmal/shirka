@@ -16,13 +16,22 @@ clean:
 	rm -f *.o
 	rm -f shirka utils/ripple/ripple
 
-test: shirka test-harness test-hashmap test-lexical-no-tail
+test: shirka test-input test-harness test-hashmap test-lexical-no-tail
 	./shirka test/parser.shk
 	./shirka test/operations.shk
 	./shirka test/ansi.shk
 	./shirka test/ripple-highlight.shk
 	./shirka test/lexical.shk
 	./shirka test/stack-fields.shk
+
+.PHONY: test-input
+test-input: env.o objects.o parser.o scope.o hashmap.o
+	@set -e; \
+	build_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$build_dir"' 0; \
+	$(CC) $(CFLAGS) -I. test/input.c env.o objects.o parser.o scope.o hashmap.o \
+		-lm -o "$$build_dir/test"; \
+	"$$build_dir/test"
 
 .PHONY: test-lexical-no-tail
 test-lexical-no-tail:

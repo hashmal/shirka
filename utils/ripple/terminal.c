@@ -1,3 +1,4 @@
+#define _DARWIN_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,13 +7,17 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <time.h>
 #include <termios.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "ripple.h"
 
-static char *history_path;
+/* Raw record separators cannot occur in accepted editor input. */
+#define HISTORY_MARKER '\036'
+
+static int history_directory = -1;
 static int initialized;
 static struct termios original_terminal;
 static int saved_terminal;
@@ -37,49 +42,114 @@ static void history_init (void)
 {
 	const char *base = getenv("XDG_STATE_HOME");
 	const char *home = getenv("HOME");
+	char *path;
 	char *cursor;
+	char descriptor[64];
+	char first = 0;
 	struct stat info;
 	size_t size;
 	int fd;
+	int status;
 
+	history_comment_char = HISTORY_MARKER;
+	history_write_timestamps = 1;
+	history_multiline_entries = 1;
+	stifle_history(500);
 	if (base && *base != '/')
 		base = NULL;
 	if (!base && (!home || *home != '/'))
 		return;
 	size = strlen(base ? base : home) + 40;
-	history_path = malloc(size);
-	if (!history_path)
+	path = malloc(size);
+	if (!path)
 		return;
-	snprintf(history_path, size, "%s%s/ripple/history", base ? base : home,
+	snprintf(path, size, "%s%s/ripple/history", base ? base : home,
 		base ? "" : "/.local/state");
-	for (cursor = history_path + 1; *cursor; cursor++) {
+	for (cursor = path + 1; *cursor; cursor++) {
 		if (*cursor == '/') {
 			*cursor = 0;
-			mkdir(history_path, 0700);
+			mkdir(path, 0700);
 			*cursor = '/';
 		}
 	}
-	/* Do not follow a preexisting history-file symlink. */
-	if (lstat(history_path, &info) == 0 &&
-		(!S_ISREG(info.st_mode) || info.st_uid != geteuid())) {
-		free(history_path);
-		history_path = NULL;
+	*strrchr(path, '/') = 0;
+	history_directory = open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
+	free(path);
+	if (history_directory < 0)
 		return;
-	}
-	fd = open(history_path, O_WRONLY | O_CREAT, 0600);
+	if (fstat(history_directory, &info) < 0 || info.st_uid != geteuid() ||
+		(info.st_mode & 077))
+		goto unavailable;
+	/* Pin the checked file before Readline opens it through /dev/fd. */
+	fd = openat(history_directory, "history", O_RDONLY | O_NOFOLLOW | O_NONBLOCK);
 	if (fd < 0) {
-		free(history_path);
-		history_path = NULL;
+		if (errno == ENOENT)
+			return;
+		goto unavailable;
+	}
+	if (fstat(fd, &info) < 0 || !S_ISREG(info.st_mode) || info.st_uid != geteuid()) {
+		close(fd);
+		goto unavailable;
+	}
+	snprintf(descriptor, sizeof(descriptor), "/dev/fd/%d", fd);
+	if (info.st_size > 4 * 1024 * 1024 || pread(fd, &first, 1, 0) < 0) {
+		close(fd);
+		goto unavailable;
+	}
+	/* Read existing '#' timestamp files; all future saves use our marker. */
+	history_comment_char = first == HISTORY_MARKER ? HISTORY_MARKER : '#';
+	status = read_history(descriptor);
+	history_comment_char = HISTORY_MARKER;
+	close(fd);
+	if (status != 0)
+		goto unavailable;
+	return;
+
+unavailable:
+	close(history_directory);
+	history_directory = -1;
+}
+
+static void history_save (void)
+{
+	char temporary[64];
+	HIST_ENTRY **entries = history_list();
+	FILE *file;
+	int fd = -1;
+	int success;
+	int i;
+
+	if (history_directory < 0)
+		return;
+	for (i = 0; i < 16; i++) {
+		snprintf(temporary, sizeof(temporary), ".history.%ld.%d", (long)getpid(), i);
+		fd = openat(history_directory, temporary, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+		if (fd >= 0 || errno != EEXIST)
+			break;
+	}
+	if (fd < 0)
+		return;
+	file = fdopen(fd, "w");
+	if (!file) {
+		close(fd);
+		unlinkat(history_directory, temporary, 0);
 		return;
 	}
-	fchmod(fd, 0600);
-	close(fd);
-	history_comment_char = '#';
-	history_write_timestamps = 1;
-	history_multiline_entries = 1;
-	stifle_history(500);
-	if (stat(history_path, &info) == 0 && info.st_size <= 4 * 1024 * 1024)
-		read_history(history_path);
+	/* Readline's path-based writer cannot use a pinned directory on macOS.
+	 * Its timestamp-delimited format also preserves multiline submissions. */
+	success = fchmod(fd, 0600) == 0;
+	for (i = 0; success && entries && entries[i]; i++) {
+		const char *stamp = entries[i]->timestamp;
+
+		success = fprintf(file, "%c%s\n%s\n", HISTORY_MARKER,
+			stamp && *stamp ? stamp + 1 : "0", entries[i]->line) >= 0;
+	}
+	if (fclose(file) != 0)
+		success = 0;
+	/* Publish a complete file; failure leaves the previous history intact. */
+	if (success)
+		renameat(history_directory, temporary, history_directory, "history");
+	unlinkat(history_directory, temporary, 0);
 }
 
 void ripple_terminal_init (void)
@@ -111,16 +181,17 @@ void ripple_terminal_init (void)
 void ripple_terminal_free (void)
 {
 	if (initialized && ripple.interactive) {
-		if (history_path)
-			write_history(history_path);
+		history_save();
 		clear_history();
 		rl_free_line_state();
 		rl_cleanup_after_signal();
 		if (saved_terminal)
 			tcsetattr(STDIN_FILENO, TCSANOW, &original_terminal);
 	}
-	free(history_path);
-	history_path = NULL;
+	if (history_directory >= 0)
+		close(history_directory);
+	history_directory = -1;
+	initialized = saved_terminal = 0;
 }
 
 void ripple_history (const char *text)
@@ -129,7 +200,7 @@ void ripple_history (const char *text)
 
 	if (ripple.interactive && *text && strlen(text) <= 8192) {
 		add_history(text);
-		snprintf(stamp, sizeof(stamp), "#%ld", (long)time(NULL));
+		snprintf(stamp, sizeof(stamp), "%c%ld", HISTORY_MARKER, (long)time(NULL));
 		add_history_time(stamp);
 	}
 }

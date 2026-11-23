@@ -66,7 +66,7 @@ skO *skO_clone (skO *obj)
 {
 	skO *copy;
 	skO *iter;
-	skO *child_copy;
+	skO **tail;
 
 	copy       = object_new();
 	copy->next = NULL;
@@ -85,11 +85,12 @@ skO *skO_clone (skO *obj)
 		copy->self = obj->self;
 		copy->literal = obj->literal;
 		copy->data.list = NULL;
+		tail = &copy->data.list;
 
 		iter = obj->data.list;
 		while (iter) {
-			child_copy = skO_clone(iter);
-			sk_list_append(copy, child_copy);
+			*tail = skO_clone(iter);
+			tail = &(*tail)->next;
 			iter = iter->next;
 		}
 

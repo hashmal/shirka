@@ -431,6 +431,7 @@ skO *parse_obj_restore (char **next, jmp_buf jmp)
 skO *parse_string_literal (char **next, jmp_buf jmp)
 {
 	skO *list;
+	skO **tail;
 	jmp_buf string_error;
 	int status;
 
@@ -440,6 +441,7 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 	++*next;
 	list = skO_list_new();
 	list->literal = 1;
+	tail = &list->data.list;
 
 	if ((status = setjmp(string_error))) {
 		skO_free(list);
@@ -449,7 +451,8 @@ skO *parse_string_literal (char **next, jmp_buf jmp)
 		if (**next == 0) {
 			longjmp(string_error, SK_PARSE_MORE);
 		}
-		sk_list_append(list, parse_character(next, string_error));
+		*tail = parse_character(next, string_error);
+		tail = &(*tail)->next;
 	}
 	++*next;
 
@@ -463,6 +466,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 {
 	skO     *obj;                       /* parsed token (or NULL)       */
 	skO     *list;                     /* used to store parsed objects */
+	skO     **tail;                    /* next insertion point         */
 	/* Preserve ownership of pending prefix tokens across longjmp. */
 	skO     *volatile prefixed = NULL;
 	char    *src      = *next;
@@ -475,6 +479,7 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		return NULL;
 	list = skO_list_new();
 	list->literal = 1;
+	tail = &list->data.list;
 
 	if ((status = setjmp(pe))) {
 		if (prefixed)
@@ -531,21 +536,24 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 
 		obj = parse_op_def(&src, pe);
 		if (obj) {
-			sk_list_append(list, obj);
+			*tail = obj;
+			tail = &obj->next;
 			obj = skO_symbol_new("$=>");
 			goto matched;
 		}
 
 		obj = parse_obj_reserve(&src, pe);
 		if (obj) {
-			sk_list_append(list, obj);
+			*tail = obj;
+			tail = &obj->next;
 			obj = skO_symbol_new("$->");
 			goto matched;
 		}
 
 		obj = parse_obj_restore(&src, pe);
 		if (obj) {
-			sk_list_append(list, obj);
+			*tail = obj;
+			tail = &obj->next;
 			obj = skO_symbol_new("$<-");
 			goto matched;
 		}
@@ -566,10 +574,13 @@ skO *skO_parse (char **next, jmp_buf jmp, char *delim)
 		longjmp(pe, 1);
 
 	matched:
-		sk_list_append(list, obj);
+		*tail = obj;
+		tail = &obj->next;
 		
 		if (prefixed) {
-			sk_list_append(list, prefixed->data.list);
+			*tail = prefixed->data.list;
+			while (*tail)
+				tail = &(*tail)->next;
 			free(prefixed);
 			prefixed = NULL;
 		}

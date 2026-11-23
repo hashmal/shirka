@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "ripple.h"
 #include "../../test/reclamation.h"
 
@@ -17,6 +18,7 @@ static size_t allocations;
 static size_t baseline;
 static int submission;
 static int cycle;
+static char nul_command[256];
 
 void *sk_test_alloc (size_t size)
 {
@@ -52,7 +54,8 @@ char *ripple_read_line (const char *prompt, enum ripple_input *status)
 		"1 increment", "/clear", "1 TRUE +", "/clear",
 		"[1 -> temporary missing 2] !", "[ : ]",
 		"/load test/fixtures/absent.shk", "/load test/fixtures/malformed.shk",
-		"[", "2", "]", "/clear"
+		"[", "2", "]", cycle % 20 ? "/stack" : "/fields", "/clear",
+		cycle % 20 ? "/clear" : "/bindings", nul_command, "/clear"
 	};
 	const char *text;
 
@@ -60,14 +63,16 @@ char *ripple_read_line (const char *prompt, enum ripple_input *status)
 	assert(ripple.session->scope == ripple.scope && !ripple.session->execution);
 	if (submission == -1) {
 		submission = 0;
-		return strdup("42 -> persistent [1 +] => increment");
+		return strdup("42 -> persistent [1 +] => increment 1 -> removed <- removed <<");
 	}
 	assert((!strcmp(prompt, "... ")) == (submission == 9 || submission == 10));
 	if (!submission) {
 		assert(!ripple.session->stack);
-		if (cycle == 1)
+		/* Compare the same input pattern after inspection and stack display
+		 * have both warmed up; their controller temporaries differ in size. */
+		if (cycle == 20)
 			baseline = allocations;
-		if (cycle > 1)
+		if (cycle > 20 && cycle % 20 == 0)
 			assert(allocations == baseline);
 		if (cycle == 100) {
 			*status = RIPPLE_EOF;
@@ -85,8 +90,17 @@ char *ripple_read_line (const char *prompt, enum ripple_input *status)
 int main (void)
 {
 	size_t retained;
+	char path[] = "/tmp/ripple-nul-XXXXXX";
+	const char source[] = "999 puts\0abort";
+	int fd = mkstemp(path);
+	FILE *file;
 	int i;
 
+	assert(fd >= 0);
+	file = fdopen(fd, "wb"); assert(file);
+	assert(fwrite(source, 1, sizeof(source) - 1, file) == sizeof(source) - 1);
+	assert(fclose(file) == 0);
+	snprintf(nul_command, sizeof(nul_command), "/load %s", path);
 	retained = 0;
 	for (i = 0; i < 2; i++) {
 		submission = -1;
@@ -97,6 +111,7 @@ int main (void)
 			assert(allocations == retained);
 		retained = allocations;
 	}
+	unlink(path);
 	puts("ripple controller and session reclamation passed; interned symbols retained.");
 	return 0;
 }

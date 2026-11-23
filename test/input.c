@@ -5,6 +5,7 @@
  */
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "shirka.h"
 
@@ -41,6 +42,63 @@ static void check_comment(char *source, skO_t type)
 	assert(token->tag == type);
 	assert(strcmp(token->data.sym->name, "foo") == 0);
 	skO_free(result);
+}
+
+static void check_builders (void)
+{
+	const int count = 32768;
+	const int order[] = {3, 1, 2, 6, 4, 5, 7, 8};
+	char *source = malloc((size_t)count * 2 + 32);
+	skO *list;
+	skO *copy;
+	skO *node;
+	int i;
+
+	assert(source);
+	assert(skO_read("(1 2) 3 (4 5) 6 7 () 8", &list) == SK_PARSE_OK);
+	node = list->data.list;
+	for (i = 0; i < (int)(sizeof(order) / sizeof(order[0])); i++) {
+		assert(node && node->tag == SKO_NUMBER && node->data.number == order[i]);
+		node = node->next;
+	}
+	assert(!node);
+	skO_free(list);
+	for (i = 0; i < count; i++) {
+		source[i * 2] = (char)('0' + i % 10);
+		source[i * 2 + 1] = ' ';
+	}
+	source[count * 2] = 0;
+	assert(skO_read(source, &list) == SK_PARSE_OK);
+	list->scope = skL_new(NULL);
+	copy = skO_clone(list);
+	assert(copy->scope == list->scope && copy->literal == list->literal);
+	assert(copy->data.list != list->data.list);
+	skO_free(list);
+	node = copy->data.list;
+	for (i = 0; i < count; i++) {
+		assert(node && node->tag == SKO_NUMBER && node->data.number == i % 10);
+		node = node->next;
+	}
+	assert(!node && copy->scope->references == 1);
+	skO_free(copy);
+	strcpy(source + count * 2, "(1) [ : ]");
+	assert(skO_read(source, &list) == SK_PARSE_ERROR && !list);
+	source[0] = '"';
+	for (i = 0; i < count; i++)
+		source[i + 1] = (char)('a' + i % 26);
+	source[count + 1] = '"';
+	source[count + 2] = 0;
+	assert(skO_read(source, &list) == SK_PARSE_OK);
+	copy = skO_clone(list);
+	skO_free(list);
+	node = copy->data.list->data.list;
+	for (i = 0; i < count; i++) {
+		assert(node && node->tag == SKO_CHARACTER && node->data.character == 'a' + i % 26);
+		node = node->next;
+	}
+	assert(!node);
+	skO_free(copy);
+	free(source);
 }
 
 int main(void)
@@ -103,6 +161,7 @@ int main(void)
 
 	for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
 		check(invalid[i], 0);
+	check_builders();
 	puts("Input regressions passed.");
 	return 0;
 }

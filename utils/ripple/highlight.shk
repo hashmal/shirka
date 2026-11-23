@@ -122,11 +122,11 @@
 
 (=> ripple/prompt)
 -- -- Prompt; preview only three bounded descriptions, bottom to top.
-  [ 3 127 3 ripple/stack-view -> p/color <<
+  [ 3 127 3 ripple/stack-view <<
     reverse "" ><
     (each) [
-      p/color ripple/format
+      ripple/color? ripple/format
       ++ " " ++
     ]
-    ".." p/color [ [:bright-black] ansi-style ] !?
+    ".." ripple/color? [ [:bright-black] ansi-style ] !?
     " " ++ ++ ]
